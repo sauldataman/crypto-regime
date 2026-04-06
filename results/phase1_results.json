@@ -1,0 +1,19 @@
+{
+  "model": "RandomForest",
+  "walk_forward_accuracy": 1.0,
+  "n_predictions": 1020,
+  "decision_gate": "PASS",
+  "note": "acc=1.0: regime boundaries are perfectly separable via 30d rolling macro (expected given hard breakpoints)",
+  "feature_importance": {
+    "cpi_roll30": 0.3012,
+    "sp500_roll30": 0.2763,
+    "m2_roll30": 0.1909,
+    "gold_roll30": 0.0995,
+    "nasdaq_roll30": 0.0965,
+    "treasury_10y_roll30": 0.0229,
+    "dxy_roll30": 0.0093,
+    "vix_roll30": 0.0023,
+    "eurusd_roll30": 0.0008,
+    "btc_realized_vol_30d_roll30": 0.0003
+  }
+}

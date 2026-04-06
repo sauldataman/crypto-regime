@@ -1,0 +1,41 @@
+{
+  "ar1": {
+    "1": {
+      "dir_acc": 0.5205,
+      "mae": 0.671697,
+      "n": 3462
+    },
+    "5": {
+      "dir_acc": 0.513,
+      "mae": 0.673114,
+      "n": 3462
+    },
+    "30": {
+      "dir_acc": 0.5113,
+      "mae": 0.676479,
+      "n": 3462
+    }
+  },
+  "arima": {
+    "1": {
+      "dir_acc": 0.303,
+      "mae": 0.665657,
+      "rmse": 0.981443,
+      "n": 693
+    },
+    "5": {
+      "dir_acc": 0.2785,
+      "mae": 0.696132,
+      "rmse": 1.134539,
+      "n": 693
+    },
+    "30": {
+      "dir_acc": 0.29,
+      "mae": 0.694376,
+      "rmse": 1.130314,
+      "n": 693
+    }
+  },
+  "timesfm_zeroshot": "error: No module named 'timesfm'",
+  "timesfm_xreg": "error: No module named 'timesfm'"
+}
