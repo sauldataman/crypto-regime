@@ -1,0 +1,7 @@
+data/processed/*.jsonl
+data/*.jsonl
+*.parquet
+models/*.pt
+models/*.pkl
+__pycache__/
+.venv/
