@@ -1,8 +1,11 @@
-"""Feature engineering: derived features, z-score normalization, 7-day lag."""
+"""Feature engineering: derived features, rolling z-score normalization, 7-day lag."""
+
+import logging
 
 import numpy as np
 import pandas as pd
-from sklearn.preprocessing import StandardScaler
+
+logger = logging.getLogger(__name__)
 
 # BTC halving dates (actual and estimated)
 HALVING_DATES = [
@@ -53,23 +56,16 @@ def _days_to_next_halving(date: pd.Timestamp) -> int:
 
 
 def zscore_normalize(df: pd.DataFrame) -> pd.DataFrame:
-    """Apply z-score normalization to all numeric columns except excluded ones."""
+    """Apply rolling 252-day z-score to all numeric columns except excluded ones."""
     out = df.copy()
     numeric_cols = [
         c for c in out.select_dtypes(include=[np.number]).columns
         if c not in EXCLUDE_FROM_ZSCORE
     ]
-
-    # Ensure float dtype so z-scored values can be assigned
-    out[numeric_cols] = out[numeric_cols].astype(float)
-
-    scaler = StandardScaler()
-    # Fit on non-NaN data
-    valid_mask = out[numeric_cols].notna().all(axis=1)
-    if valid_mask.sum() > 0:
-        out.loc[valid_mask, numeric_cols] = scaler.fit_transform(out.loc[valid_mask, numeric_cols])
-    # Leave NaN rows as NaN
-
+    for col in numeric_cols:
+        rolling_mean = out[col].rolling(252, min_periods=60).mean()
+        rolling_std = out[col].rolling(252, min_periods=60).std().clip(lower=1e-8)
+        out[col] = (out[col] - rolling_mean) / rolling_std
     return out
 
 

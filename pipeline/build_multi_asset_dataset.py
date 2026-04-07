@@ -1,9 +1,12 @@
 """
 Build multi-asset TimesFM training dataset
-Assets: BTC + ETH + SOL + BNB, each with regime-specific covariates
+Assets: BTC + ETH + SOL + BNB — price series only (no covariates in Phase I)
 """
+import logging
 import pandas as pd, numpy as np, json
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 ROOT = Path(__file__).parent.parent
 RAW  = ROOT / "data/raw"
@@ -14,12 +17,34 @@ PROC.mkdir(exist_ok=True)
 macro_df = pd.read_parquet(RAW / "macro.parquet")
 onchain_df = pd.read_parquet(RAW / "onchain.parquet")
 
-# Regime labels from BTC breakpoints
-REGIME_BREAKS = [pd.Timestamp("2020-11-11"), pd.Timestamp("2024-01-11")]
+# Regime labels: load from PELT output if available, else fall back to hardcoded
+_REGIME_BP_PATH = PROC / "regime_breakpoints.json"
+_HARDCODED_BREAKS = [pd.Timestamp("2020-11-11"), pd.Timestamp("2024-01-11")]
+
+def _load_regime_breaks() -> list[pd.Timestamp]:
+    """Load regime breakpoints from PELT output, falling back to hardcoded."""
+    if _REGIME_BP_PATH.exists():
+        try:
+            with open(_REGIME_BP_PATH) as f:
+                data = json.load(f)
+            # Use BTC breakpoints as the canonical regime boundaries
+            btc_bps = data.get("breakpoints", {}).get("btc", [])
+            if btc_bps:
+                return [pd.Timestamp(d) for d in btc_bps]
+            logger.warning("PELT output exists but has no BTC breakpoints; using hardcoded.")
+        except (json.JSONDecodeError, KeyError) as e:
+            logger.warning(f"Failed to parse {_REGIME_BP_PATH}: {e}; using hardcoded.")
+    else:
+        logger.warning(f"{_REGIME_BP_PATH} not found. Using hardcoded regime breaks.")
+    return _HARDCODED_BREAKS
+
+REGIME_BREAKS = _load_regime_breaks()
+
 def label_regime(date):
-    if date < REGIME_BREAKS[0]: return "early"
-    elif date < REGIME_BREAKS[1]: return "late"
-    else: return "post_etf"
+    for i, bp in enumerate(REGIME_BREAKS):
+        if date < bp:
+            return f"regime_{i}"
+    return f"regime_{len(REGIME_BREAKS)}"
 
 ASSETS = {
     "btc": ("data/raw/btc_price.parquet", "2016-01-01"),
@@ -57,17 +82,15 @@ for asset, (price_path, start) in ASSETS.items():
     cov_cols = [c for c in COVARIATE_COLS if c in df.columns]
     for col in cov_cols:
         roll_mean = df[col].rolling(252).mean()
-        roll_std  = df[col].rolling(252).std().replace(0, 1)
+        roll_std  = df[col].rolling(252).std().clip(lower=1e-8)
         df[f"{col}_z"] = (df[col] - roll_mean) / roll_std
         df[f"{col}_z_lag7"] = df[f"{col}_z"].shift(7)
 
     df = df.dropna(subset=["daily_return","vol_30d"])
-    z_lag_cols = [c for c in df.columns if c.endswith("_z_lag7")]
-    
-    # sliding windows
+
+    # sliding windows — price series only (no covariates in Phase I)
     WINDOW, STRIDE = 512, 7
     prices = df["daily_return"].values
-    covs   = df[z_lag_cols].values
     dates  = df.index
     regimes= df["regime"].values
 
@@ -75,20 +98,18 @@ for asset, (price_path, start) in ASSETS.items():
     for i in range(WINDOW, len(prices) - 30, STRIDE):
         context = prices[i-WINDOW:i].tolist()
         future  = prices[i:i+30].tolist()
-        cov_window = covs[i-WINDOW:i+30].tolist()
         dominant_regime = pd.Series(regimes[i-WINDOW:i]).value_counts().idxmax()
-        
+
         if any(np.isnan(context)) or any(np.isnan(future)):
             continue
-        
+
         sample = {
             "asset": asset,
             "end_date": str(dates[i].date()),
             "regime": dominant_regime,
             "context": context,
             "future": future,
-            "covariates": cov_window,
-            "covariate_names": z_lag_cols,
+            "dates": [str(dates[j].date()) for j in range(i-WINDOW, i+30)],
         }
         all_samples.append(sample)
         n_samples += 1

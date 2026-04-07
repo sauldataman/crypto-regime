@@ -1,3 +1,4 @@
+data/paper/
 data/processed/*.jsonl
 data/*.jsonl
 *.parquet

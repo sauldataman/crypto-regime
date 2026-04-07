@@ -3,10 +3,13 @@ Phase 0: Baseline Experiments
 AR(1), ARIMA, TimesFM zero-shot, TimesFM+XReg
 Walk-forward: 252d train, 1/5/30d horizon, 1d step
 """
+import logging
 import pandas as pd, numpy as np, json, time, warnings
 from pathlib import Path
 from statsmodels.tsa.ar_model import AutoReg
 warnings.filterwarnings("ignore")
+
+logger = logging.getLogger(__name__)
 
 ROOT = Path(__file__).parent.parent
 DATA = ROOT / "data/processed/btc_full.parquet"
@@ -55,7 +58,8 @@ for i in range(TRAIN_W, len(returns) - max(HORIZONS)):
         for h in HORIZONS:
             forecast = mdl.forecast(h)[-1]
             preds[h].append((returns[i+h-1], forecast))
-    except: pass
+    except (ValueError, np.linalg.LinAlgError) as e:
+        logger.warning(f"AR fit failed at index {i}: {e}")
 results["ar1"] = evaluate("AR(1)", preds)
 
 # ── 0.2 ARIMA ────────────────────────────────────────────────
@@ -69,8 +73,15 @@ try:
             mdl = auto_arima(train, max_p=3, max_q=3, seasonal=False, suppress_warnings=True, error_action="ignore")
             fc = mdl.predict(max(HORIZONS))
             for h in HORIZONS:
-                preds[h].append((returns[i+h-1], fc[h-1]))
-        except: pass
+                # fc[h-1] = h-step-ahead forecast; compare to single-day return at t+h
+                # For h>1, use cumulative actual return to match multi-step forecast
+                if h == 1:
+                    actual = returns[i]
+                else:
+                    actual = np.sum(returns[i:i+h])
+                preds[h].append((actual, fc[h-1]))
+        except (ValueError, np.linalg.LinAlgError) as e:
+            logger.warning(f"ARIMA fit failed at index {i}: {e}")
     results["arima"] = evaluate("ARIMA", preds)
 except ImportError:
     print("  pmdarima not installed, skipping")
@@ -93,7 +104,8 @@ try:
             fc = pt[0]
             for h in HORIZONS:
                 preds[h].append((returns[i+h-1], float(fc[h-1])))
-        except: pass
+        except (RuntimeError, ValueError, IndexError) as e:
+            logger.warning(f"TimesFM forecast failed at index {i}: {e}")
     results["timesfm_zeroshot"] = evaluate("TimesFM zero-shot", preds)
 except Exception as e:
     print(f"  TimesFM not available: {e}")
@@ -122,7 +134,8 @@ try:
             fc = pt[0]
             for h in HORIZONS:
                 preds[h].append((returns[i+h-1], float(fc[h-1])))
-        except: pass
+        except (RuntimeError, ValueError, IndexError) as e:
+            logger.warning(f"TimesFM+XReg forecast failed at index {i}: {e}")
     results["timesfm_xreg"] = evaluate("TimesFM+XReg", preds)
 except Exception as e:
     print(f"  XReg not available (needs JAX): {e}")
