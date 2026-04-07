@@ -1,4 +1,4 @@
-"""5分钟K线，11个资产，从2017年开始（Binance 2017-07上线）"""
+"""5分钟K线，6个核心资产，从Binance最早可用日期开始"""
 import argparse
 import logging
 import time
@@ -15,8 +15,7 @@ RAW.mkdir(parents=True, exist_ok=True)
 
 assets = [
     "BTC/USDT", "ETH/USDT", "SOL/USDT", "BNB/USDT",
-    "DOGE/USDT", "AVAX/USDT", "LINK/USDT",
-    "MATIC/USDT", "XRP/USDT", "ADA/USDT", "DOT/USDT"
+    "DOGE/USDT", "LINK/USDT",
 ]
 
 MAX_RETRIES = 3

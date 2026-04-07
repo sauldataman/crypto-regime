@@ -79,9 +79,8 @@ if __name__ == "__main__":
         # (yahoo_ticker, ccxt_symbol, name, earliest_date)
         ("ETH-USD",  "ETH/USDT",  "eth",  "2015-08-01"),  # ETH launched Aug 2015
         ("SOL-USD",  "SOL/USDT",  "sol",  "2020-04-01"),  # earliest available
-        ("BNB-USD",  "BNB/USDT",  "bnb",  "2017-11-01"),  # earliest on Binance
+        ("BNB-USD",  "BNB/USDT",  "bnb",  "2017-07-01"),  # Binance launched Jul 2017
         ("DOGE-USD", "DOGE/USDT", "doge", "2013-12-01"),  # DOGE launched Dec 2013
-        ("AVAX-USD", "AVAX/USDT", "avax", "2020-09-01"),  # AVAX mainnet Sep 2020
         ("LINK-USD", "LINK/USDT", "link", "2017-09-01"),  # LINK launched Sep 2017
     ]
 
