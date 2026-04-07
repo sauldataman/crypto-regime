@@ -40,7 +40,7 @@ setup_native() {
     echo ""
 
     # TimesFM from GitHub (latest, with Finetuner API)
-    pip install git+https://github.com/google-research/timesfm.git#egg=timesfm[torch]
+    pip install "timesfm[torch] @ git+https://github.com/google-research/timesfm.git"
 
     # Project dependencies
     pip install ruptures>=1.1.8 mapie>=0.8 arch>=7.0

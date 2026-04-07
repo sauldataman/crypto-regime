@@ -4,7 +4,7 @@ WORKDIR /workspace/crypto-regime
 
 # Install TimesFM from GitHub (not PyPI) to get latest Finetuner API
 RUN pip install --no-cache-dir \
-    git+https://github.com/google-research/timesfm.git#egg=timesfm[torch]
+    "timesfm[torch] @ git+https://github.com/google-research/timesfm.git"
 
 # Install project dependencies
 RUN pip install --no-cache-dir \
