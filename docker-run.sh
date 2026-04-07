@@ -1,12 +1,14 @@
 #!/bin/bash
 # Usage:
 #   bash docker-run.sh              # interactive shell
-#   bash docker-run.sh phase0       # run phase 0 baselines
-#   bash docker-run.sh phase2 2.4   # run phase 2 experiment 2.4
-#   bash docker-run.sh phase3 5     # run phase 3 inference (5 days)
+#   bash docker-run.sh eval         # full TimesFM evaluation (core research)
+#   bash docker-run.sh phase05      # Phase 0.5 smoke test (decision gate)
+#   bash docker-run.sh phase2       # Phase 2 progressive fine-tune
+#   bash docker-run.sh phase3       # Phase 3 risk signals
+#   bash docker-run.sh all          # eval + phase05 + phase2 + phase3
 
-IMAGE_NAME="btc-regime"
-CONTAINER_NAME="btc-regime-run"
+IMAGE_NAME="crypto-regime"
+CONTAINER_NAME="crypto-regime-run"
 
 # Build if image doesn't exist
 if ! docker image inspect $IMAGE_NAME > /dev/null 2>&1; then
@@ -19,21 +21,30 @@ docker rm -f $CONTAINER_NAME 2>/dev/null
 
 CMD="bash"
 case "$1" in
-    phase0) CMD="python3 experiments/phase0_baselines.py" ;;
-    phase1) CMD="python3 experiments/phase1_regime_classifier.py" ;;
-    phase2) CMD="python3 experiments/phase2_finetune.py --exp ${2:-2.4}" ;;
-    phase3) CMD="python3 experiments/phase3_inference.py --days ${2:-5}" ;;
-    all)    CMD="python3 experiments/phase0_baselines.py && python3 experiments/phase2_finetune.py --exp 2.4 && python3 experiments/phase3_inference.py --days 5" ;;
+    eval)     CMD="python3 experiments/eval_timesfm.py" ;;
+    phase05)  CMD="python3 experiments/phase05_smoke_test.py" ;;
+    phase2)   CMD="python3 experiments/phase2_finetune.py --stage ${2:-progressive}" ;;
+    phase3)   CMD="python3 experiments/phase3_risk_signals.py --model ${2:-auto}" ;;
+    baseline) CMD="python3 experiments/phase0_baselines.py" ;;
+    all)      CMD="python3 experiments/eval_timesfm.py && \
+                   python3 experiments/phase05_smoke_test.py && \
+                   echo '=== Check phase05 results before continuing ===' && \
+                   python3 experiments/phase3_risk_signals.py --model zero-shot" ;;
 esac
+
+echo "Running: $CMD"
+echo "---"
 
 docker run -it --gpus all \
     --name $CONTAINER_NAME \
     --shm-size=16g \
-    -v $(pwd)/data:/workspace/btc-regime/data \
-    -v $(pwd)/models:/workspace/btc-regime/models \
-    -v $(pwd)/results:/workspace/btc-regime/results \
-    -v $(pwd)/experiments:/workspace/btc-regime/experiments \
-    -v $(pwd)/pipeline:/workspace/btc-regime/pipeline \
-    -v $(pwd)/run_pipeline.py:/workspace/btc-regime/run_pipeline.py \
+    -v $(pwd)/data:/workspace/crypto-regime/data \
+    -v $(pwd)/models:/workspace/crypto-regime/models \
+    -v $(pwd)/results:/workspace/crypto-regime/results \
+    -v $(pwd)/experiments:/workspace/crypto-regime/experiments \
+    -v $(pwd)/pipeline:/workspace/crypto-regime/pipeline \
+    -v $(pwd)/run_pipeline.py:/workspace/crypto-regime/run_pipeline.py \
+    -v $(pwd)/reports:/workspace/crypto-regime/reports \
+    -v $(pwd)/requirements.txt:/workspace/crypto-regime/requirements.txt \
     $IMAGE_NAME \
     bash -c "$CMD"

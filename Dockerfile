@@ -1,23 +1,30 @@
 FROM nvcr.io/nvidia/pytorch:26.02-py3
 
-WORKDIR /workspace/btc-regime
+WORKDIR /workspace/crypto-regime
 
-# Install dependencies
+# Install TimesFM from GitHub (not PyPI) to get latest Finetuner API
 RUN pip install --no-cache-dir \
-    timesfm[torch] \
+    git+https://github.com/google-research/timesfm.git#egg=timesfm[torch]
+
+# Install project dependencies
+RUN pip install --no-cache-dir \
+    ruptures>=1.1.8 \
+    mapie>=0.8 \
+    arch>=7.0 \
     yfinance \
     fredapi \
-    ccxt \
-    xgboost \
+    ccxt>=4.0 \
+    xgboost>=2.0 \
     scikit-learn \
+    statsmodels>=0.14 \
+    pmdarima>=2.0 \
     pyarrow \
-    pmdarima \
     matplotlib
 
-# Verify
-RUN python3 -c "import timesfm; print('TimesFM OK')" && \
-    python3 -c "import torch; print('PyTorch OK, CUDA:', torch.cuda.is_available())"
-
-ENV FRED_API_KEY=9fd4f7d25a037dc92c642dde3d79131a
+# Verify installation
+RUN python3 -c "import timesfm; print('TimesFM OK'); print(dir(timesfm))" && \
+    python3 -c "import torch; print(f'PyTorch OK, CUDA: {torch.cuda.is_available()}')" && \
+    python3 -c "import ruptures; print('ruptures OK')" && \
+    python3 -c "import mapie; print('mapie OK')"
 
 CMD ["bash"]
