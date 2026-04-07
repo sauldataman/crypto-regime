@@ -284,7 +284,7 @@ def ar_forecast(returns: pd.Series, test_dates: pd.DatetimeIndex,
             continue
         train = returns.iloc[loc - train_window:loc].values
         try:
-            mdl = AutoReg(train, lags=1, old_names=False).fit(disp=False)
+            mdl = AutoReg(train, lags=1, old_names=False).fit()
             fc = mdl.forecast(horizon)
             actual = float(returns.iloc[loc:loc + horizon].sum()) if horizon > 1 else float(returns.iloc[loc])
             pred = float(np.sum(fc)) if horizon > 1 else float(fc[0])

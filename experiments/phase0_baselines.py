@@ -54,7 +54,7 @@ preds = {h: [] for h in HORIZONS}
 for i in range(TRAIN_W, len(returns) - max(HORIZONS)):
     train = returns[i-TRAIN_W:i]
     try:
-        mdl = AutoReg(train, lags=1, old_names=False).fit(disp=False)
+        mdl = AutoReg(train, lags=1, old_names=False).fit()
         for h in HORIZONS:
             forecast = mdl.forecast(h)[-1]
             preds[h].append((returns[i+h-1], forecast))
