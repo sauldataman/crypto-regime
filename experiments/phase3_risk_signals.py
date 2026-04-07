@@ -22,6 +22,7 @@ import json
 import logging
 import time
 import warnings
+from collections import deque
 from pathlib import Path
 
 import numpy as np
@@ -180,10 +181,28 @@ def conformal_calibrate(results: list[dict], alpha: float) -> dict:
 
 
 def compute_risk_signals(results: list[dict], cal_5: dict, cal_1: dict) -> list[dict]:
-    """Compute risk signals for each day in results."""
+    """Compute risk signals for each day in results.
+
+    Phase II-A fixes:
+      - Anomaly: dynamic threshold via rolling 30-day P90 of anomaly scores
+      - Uncertainty: IQR / realized_vol_30d (instead of IQR / |median|)
+      - Position weight: rank-based 1 - percentile_rank(IQR) over rolling 60-day window
+    """
     signals = []
 
-    for r in results:
+    # Pre-compute realized volatility (rolling 30-day std of actual returns)
+    actuals_arr = np.array([r["actual"] for r in results])
+    realized_vols = pd.Series(actuals_arr).rolling(window=30, min_periods=1).std().values
+
+    # Rolling windows for anomaly threshold and IQR percentile rank
+    ANOMALY_WINDOW = 30
+    POSITION_WINDOW = 60
+    ANOMALY_FALLBACK_THRESHOLD = 1.0
+
+    anomaly_score_history: deque[float] = deque(maxlen=ANOMALY_WINDOW)
+    iqr_history: deque[float] = deque(maxlen=POSITION_WINDOW)
+
+    for i, r in enumerate(results):
         actual = r["actual"]
         median = r["q50"]
         # VaR 5% and 1%: derived from P10 via conformal correction
@@ -195,26 +214,41 @@ def compute_risk_signals(results: list[dict], cal_5: dict, cal_1: dict) -> list[
         q90 = r["q90"]
         iqr = q90 - q10
 
-        # 1-day VaR (already computed above from P10 + conformal correction)
-
-        # Anomaly score: |actual - median| / IQR
-        # Guards against IQR = 0
+        # --- Anomaly score: |actual - median| / IQR (unchanged formula) ---
         if abs(iqr) > 1e-10:
             anomaly_score = abs(actual - median) / iqr
         else:
             anomaly_score = 0.0
 
-        # Uncertainty ratio: IQR / |median|
-        if abs(median) > 1e-10:
-            uncertainty = iqr / abs(median)
+        # Dynamic anomaly threshold: rolling 30-day P90 of anomaly scores
+        if len(anomaly_score_history) >= ANOMALY_WINDOW:
+            anomaly_threshold = float(np.percentile(list(anomaly_score_history), 90))
         else:
-            uncertainty = float("inf") if iqr > 0 else 0.0
+            anomaly_threshold = ANOMALY_FALLBACK_THRESHOLD
 
-        # Position sizing: inverse of uncertainty (capped)
-        if uncertainty > 0:
-            position_weight = min(1.0 / uncertainty, 10.0)  # cap at 10x
+        anomaly_flag = anomaly_score > anomaly_threshold
+        anomaly_score_history.append(anomaly_score)
+
+        # --- Uncertainty ratio: IQR / realized_vol_30d ---
+        realized_vol = realized_vols[i]
+        if realized_vol is not None and realized_vol > 1e-8:
+            uncertainty = iqr / realized_vol
         else:
-            position_weight = 10.0
+            # Fallback: use IQR directly as uncertainty measure
+            uncertainty = iqr
+
+        # --- Position weight: rank-based 1 - percentile_rank(IQR) ---
+        iqr_history.append(iqr)
+        if len(iqr_history) >= 2:
+            # Percentile rank: fraction of values in window that are <= current IQR
+            iqr_list = list(iqr_history)
+            rank = sum(1 for v in iqr_list if v <= iqr) / len(iqr_list)
+            position_weight = 1.0 - rank
+        else:
+            position_weight = 0.5  # neutral default for first observation
+
+        # Clip to [0.1, 1.0]
+        position_weight = max(0.1, min(1.0, position_weight))
 
         # VaR breaches
         var5_breach = actual < var_5pct
@@ -228,7 +262,9 @@ def compute_risk_signals(results: list[dict], cal_5: dict, cal_1: dict) -> list[
             "var5_breach": bool(var5_breach),
             "var1_breach": bool(var1_breach),
             "anomaly_score": float(anomaly_score),
-            "uncertainty_ratio": float(uncertainty) if uncertainty != float("inf") else 999.0,
+            "anomaly_flag": bool(anomaly_flag),
+            "anomaly_threshold": float(anomaly_threshold),
+            "uncertainty_ratio": float(uncertainty),
             "position_weight": float(position_weight),
             "median_forecast": float(median),
             "iqr": float(iqr),
@@ -238,7 +274,10 @@ def compute_risk_signals(results: list[dict], cal_5: dict, cal_1: dict) -> list[
 
 
 def evaluate_signals(signals: list[dict]) -> dict:
-    """Evaluate risk signal quality."""
+    """Evaluate risk signal quality.
+
+    Phase II-A: uses dynamic anomaly_flag field instead of static threshold.
+    """
     n = len(signals)
     var5_breaches = sum(1 for s in signals if s["var5_breach"])
     var1_breaches = sum(1 for s in signals if s["var1_breach"])
@@ -246,28 +285,41 @@ def evaluate_signals(signals: list[dict]) -> dict:
     var5_rate = var5_breaches / n if n > 0 else 0
     var1_rate = var1_breaches / n if n > 0 else 0
 
-    # Anomaly precision: when anomaly_score > 2, does high vol follow?
+    # Anomaly precision: when anomaly_flag is True, does high vol follow?
     # "High vol" = |actual return| in top 20% of all returns
     all_abs_returns = [abs(s["actual_return"]) for s in signals]
     vol_threshold = np.percentile(all_abs_returns, 80) if all_abs_returns else 0
 
-    anomaly_flags = [s for s in signals if s["anomaly_score"] > 2.0]
-    if anomaly_flags:
-        # Check if next 5 days have high volatility
-        # (simplified: check if current day is high vol, since we don't have forward-looking here)
-        anomaly_correct = sum(1 for s in anomaly_flags if abs(s["actual_return"]) > vol_threshold)
-        anomaly_precision = anomaly_correct / len(anomaly_flags)
+    # Use dynamic anomaly_flag (backward compatible: fall back to score > 2.0)
+    anomaly_flagged = [s for s in signals if s.get("anomaly_flag", s["anomaly_score"] > 2.0)]
+    if anomaly_flagged:
+        # Check if current day is high vol (simplified without forward-looking)
+        anomaly_correct = sum(1 for s in anomaly_flagged if abs(s["actual_return"]) > vol_threshold)
+        anomaly_precision = anomaly_correct / len(anomaly_flagged)
     else:
         anomaly_precision = 0.0
+
+    # Dynamic threshold statistics
+    thresholds = [s["anomaly_threshold"] for s in signals if "anomaly_threshold" in s]
+    avg_threshold = float(np.mean(thresholds)) if thresholds else 0.0
+    min_threshold = float(np.min(thresholds)) if thresholds else 0.0
+    max_threshold = float(np.max(thresholds)) if thresholds else 0.0
 
     logger.info("=== Risk Signal Evaluation ===")
     logger.info("  VaR 5%% breach rate: %.1f%% (%d/%d) [target: 3-8%%]", var5_rate * 100, var5_breaches, n)
     logger.info("  VaR 1%% breach rate: %.1f%% (%d/%d) [target: 0.5-2%%]", var1_rate * 100, var1_breaches, n)
-    logger.info("  Anomaly flags (score>2): %d/%d (%.1f%%)", len(anomaly_flags), n,
-                len(anomaly_flags) / n * 100 if n > 0 else 0)
+    logger.info("  Anomaly flags (dynamic threshold): %d/%d (%.1f%%)", len(anomaly_flagged), n,
+                len(anomaly_flagged) / n * 100 if n > 0 else 0)
+    logger.info("  Anomaly dynamic threshold: avg=%.3f, min=%.3f, max=%.3f",
+                avg_threshold, min_threshold, max_threshold)
     logger.info("  Anomaly precision: %.1f%%", anomaly_precision * 100)
-    logger.info("  Avg uncertainty ratio: %.2f", np.mean([s["uncertainty_ratio"] for s in signals]))
-    logger.info("  Avg position weight: %.2f", np.mean([s["position_weight"] for s in signals]))
+    logger.info("  Avg uncertainty ratio (IQR/realized_vol): %.2f",
+                np.mean([s["uncertainty_ratio"] for s in signals]))
+    logger.info("  Avg position weight (rank-based): %.2f",
+                np.mean([s["position_weight"] for s in signals]))
+    logger.info("  Position weight range: [%.2f, %.2f]",
+                np.min([s["position_weight"] for s in signals]),
+                np.max([s["position_weight"] for s in signals]))
 
     return {
         "n_days": n,
@@ -275,10 +327,16 @@ def evaluate_signals(signals: list[dict]) -> dict:
         "var_5pct_breaches": var5_breaches,
         "var_1pct_breach_rate": float(var1_rate),
         "var_1pct_breaches": var1_breaches,
-        "anomaly_flags": len(anomaly_flags),
+        "anomaly_flags": len(anomaly_flagged),
         "anomaly_precision": float(anomaly_precision),
+        "anomaly_threshold_avg": avg_threshold,
+        "anomaly_threshold_range": [min_threshold, max_threshold],
         "avg_uncertainty": float(np.mean([s["uncertainty_ratio"] for s in signals])),
         "avg_position_weight": float(np.mean([s["position_weight"] for s in signals])),
+        "position_weight_range": [
+            float(np.min([s["position_weight"] for s in signals])),
+            float(np.max([s["position_weight"] for s in signals])),
+        ],
     }
 
 
