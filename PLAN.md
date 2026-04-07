@@ -1,297 +1,177 @@
-# Crypto Regime v2 — 改进方案
+# Crypto Regime v2 — 实施计划
 
-## 从 btc-regime 继承的问题
+详细 review 见 CEO Plan: `~/.gstack/projects/sauldataman-crypto-regime/ceo-plans/2026-04-06-btc-risk-signals.md`
 
-### 致命 Bug（必须修）
+## 核心定位
 
-| # | 问题 | 位置 | 影响 |
+```
+不是价格预测工具，是风险仪表盘。
+TimesFM 2.5 → 概率预测 → conformal 校准 → 1-day VaR / anomaly / uncertainty
+```
+
+## v1 遗留问题（全部已修复）
+
+| # | 问题 | 修复 | 状态 |
 |---|------|------|------|
-| B1 | fine-tune 梯度断裂 | `phase2_finetune.py:103-112` | model.forecast() 返回 numpy，包装成新 tensor 后 backward 到不了模型参数。模型零学习 |
-| B2 | 静默吞异常 | 所有 `except: continue/pass` | 训练失败被隐藏，空模型被存为"best" |
-| B3 | 数据格式不匹配 | builder 输出 target/xreg，consumer 读 context/future/covariates | 数据读不进去 |
+| B1 | fine-tune 梯度断裂 (model.forecast() 返回 numpy) | phase2_finetune.py 重写，用 model forward 或 TimesFMFinetuner | ✅ |
+| B2 | 静默吞异常 (except: pass/continue) | 全部替换为具名异常 + logging | ✅ |
+| B3 | 数据 schema 不匹配 (target/xreg vs context/future) | 统一为 {context, future, dates, regime}，删除 build_timesfm_dataset.py | ✅ |
+| D1 | z-score 前视偏差 (全局 StandardScaler) | rolling 252 天 z-score, std clip 1e-8 | ✅ |
+| D2 | regime 标签硬编码 | ruptures PELT 替代，regime_detection.py | ✅ |
+| D3 | 代码 vs 战略错位 (做方向预测) | 重新定位为风险信号系统 | ✅ |
 
-### 设计缺陷（必须改）
-
-| # | 问题 | 位置 | 影响 |
-|---|------|------|------|
-| D1 | z-score 前视偏差 | `feature_engineering.py:56-73` | StandardScaler 在全量数据上 fit，未来信息泄露到过去。baseline 数字被污染 |
-| D2 | regime 标签硬编码 | `regime_labeling.py` | XGBoost 分类器100%准确是因为在判断"哪一年"，对实时 regime 检测无意义 |
-| D3 | 代码 vs 战略错位 | 全局 | 计划说"风险/anomaly/regime"，代码做"方向预测" |
-
----
-
-## v2 架构设计
-
-### 核心定位转变
+## 架构
 
 ```
-v1: TimesFM → 预测价格方向 → direction accuracy
-v2: TimesFM → 概率预测 → 量化不确定性 → 风险信号
-```
+Layer 1: Regime Detection (ruptures PELT)
+    输入：日度收益率
+    输出：regime breakpoints + labels
+    注意：BOCPD 是 Phase II 候选，Phase I 用 PELT (batch)
 
-v2 不追求"预测涨跌"，追求"告诉我现在的风险有多大"。
-
-### 三层架构
-
-```
-Layer 1: Regime Detection
-    输入：宏观 + 链上 + 价格
-    方法：BOCPD (Bayesian Online Changepoint Detection) 或 rolling PELT
-    输出：当前 regime 概率分布 + transition alert
-
-Layer 2: TimesFM Probabilistic Forecast
-    输入：近512天价格 + covariates（regime-conditional）
-    方法：TimesFM 2.5 quantile head（原生支持 10/25/50/75/90 分位数）
-    输出：未来 N 天的分位数预测
+Layer 2: TimesFM 2.5 Probabilistic Forecast
+    输入：近512天价格序列（无 covariates，PyTorch 不支持）
+    自定义 quantiles: [0.01, 0.05, 0.10, 0.25, 0.50, 0.75, 0.90, 0.95, 0.99]
+    输出：1-day ahead 分位数预测
 
 Layer 3: Risk Signal Generator
-    输入：quantile forecasts + actual returns
+    输入：quantile forecasts + conformal 校准
     输出：
-      - VaR (5%, 1%): 尾部风险估计
-      - Anomaly score: |actual - median| / IQR，超过阈值报警
-      - Uncertainty ratio: IQR / median，高 = 市场不确定性大
-      - Position sizing signal: 1 / uncertainty（不确定性越大仓位越小）
+      - 1-day VaR (5%, 1%): conformal calibrated
+      - Anomaly score: |actual - median| / IQR
+      - Uncertainty ratio: IQR / |median|
+      - Position sizing: 1 / uncertainty
 ```
 
-### 文件结构
+## 数据
+
+6 个核心资产: BTC, ETH, SOL, BNB, DOGE, LINK
+
+| 频率 | BTC | ETH | SOL | BNB | DOGE | LINK |
+|------|-----|-----|-----|-----|------|------|
+| Daily | 2014-09 (Yahoo) | 2015-08 | 2020-04 | 2017-07 | 2013-12 | 2017-09 |
+| Hourly | 2014-01 (CryptoCompare+Binance) | 2016-01 | 2020-08 | 2017-11 | 2017-01 | 2019-01 |
+| 5min | 2013-10 (Kraken+Binance) | 2015-08 (Kraken+Binance) | 2020-08 | 2017-11 | 2019-07 | 2017-09 |
+| 1min | 2013-10 (Kraken) | 2015-08 (Kraken) | — | — | 2019-12 (Kraken) | — |
+
+## Temporal Split (30 天 gap 防泄漏)
+
+```
+Train:       2011-01 ~ 2022-06-01
+Val:         2022-07-01 ~ 2023-06-30  (early stopping + 超参)
+Calibration: 2023-07-01 ~ 2024-06-30  (conformal prediction, ~250 天)
+Test:        2024-07-01 ~ 2025-03-31  (report only, 不做任何选择)
+```
+
+## 执行计划
+
+### Phase 0: 修基础设施 — ✅ 已完成 (Mac)
+
+- [x] Rolling 252 天 z-score 替代 StandardScaler
+- [x] 统一 schema {context, future, dates, regime}，删除 build_timesfm_dataset.py
+- [x] 所有 except:pass 替换为具名异常
+- [x] 修 ARIMA baseline sign bug
+- [x] 新增 regime_detection.py (ruptures PELT)
+- [x] 数据拉取: daily (Yahoo/Binance), hourly (CryptoCompare+Binance), 5min (Kraken+Binance)
+- [x] Pipeline 顺序: fetch → feature_eng → PELT → build_dataset
+- [x] requirements.txt 更新
+
+### Phase 0.5: 端到端 Smoke Test — 待跑 (DGX)
+
+**DECISION GATE: 如果 zero-shot 已经达到 VaR breach rate 3-8%，Phase 2 边际价值低。**
+
+- [ ] 安装 TimesFM: `pip install git+https://github.com/google-research/timesfm.git#egg=timesfm[torch]`
+- [ ] 验证 TimesFMFinetuner API 是否存在
+- [ ] Zero-shot TimesFM + conformal calibration
+- [ ] 输出 1-day VaR 5% breach rate
+- [ ] 脚本: `python experiments/phase05_smoke_test.py`
+
+### Phase 1: PELT Regime Detection — ✅ 代码已写，调参中 (Mac)
+
+- [x] regime_detection.py 实现
+- [x] 集成到 run_pipeline.py
+- [ ] PELT penalty 调参 (BTC 当前 0 个断点，需要降低 penalty)
+- [ ] 跨资产 breakpoint 同步性分析
+
+### Phase 2: Progressive Fine-Tuning — 待跑 (DGX, conditional on Phase 0.5)
+
+仅在 Phase 0.5 显示 zero-shot 不够好时执行。
+
+- [ ] Progressive: 5min → hourly → daily (3 stages)
+- [ ] 6 资产价格序列 (无 covariates)
+- [ ] TimesFMFinetuner 或 manual forward-pass
+- [ ] Gradient norm 监控, NaN loss 检测
+- [ ] 脚本: `python experiments/phase2_finetune.py`
+
+### Phase 3: 风险信号系统 — 待跑 (DGX)
+
+- [ ] 加载最佳模型 (progressive > daily > zero-shot)
+- [ ] Conformal calibration (方法在 Phase 0.5 确定)
+- [ ] 1-day VaR 5%/1%, anomaly score, uncertainty, position sizing
+- [ ] 对比 fine-tuned vs zero-shot
+- [ ] 脚本: `python experiments/phase3_risk_signals.py`
+
+## 成功标准
+
+| 指标 | 目标 |
+|------|------|
+| 端到端可运行 | Zero-shot + conformal 产出 VaR |
+| 1-day VaR 5% breach rate | 3% ~ 8% |
+| Quantile calibration 偏差 | < 5% |
+| Fine-tuned > zero-shot | 如果跑了 Phase 2，校准更好 |
+
+## 关键决策 (CEO + Eng Review 确认)
+
+1. **先测 zero-shot + conformal** — fine-tune 可能不必要 (Claude + Codex 共识)
+2. **不用 covariates** — PyTorch TimesFM 不支持 (confidence 10/10)
+3. **1-day VaR** — CoinSummer 日度风险报告场景
+4. **Conformal fallback 在 cal set 决定** — test set 只报告，不做选择
+5. **30 天 temporal gap** — 防止滑动窗口 future 泄漏
+6. **ruptures PELT** — 不是 BOCPD (BOCPD 是 Phase II online 候选)
+7. **自定义 quantile levels** — [0.01, 0.05, ..., 0.99]，不用默认 deciles
+
+## 文件结构
 
 ```
 crypto-regime/
-├── PLAN.md                          # 本文件
-├── Dockerfile                       # NGC PyTorch + TimesFM
-├── docker-run.sh                    # 容器启动脚本
-├── requirements.txt
+├── PLAN.md                              # 本文件
+├── CLAUDE.md                            # 项目约束和上下文
+├── Dockerfile                           # NGC PyTorch + TimesFM
+├── requirements.txt                     # 含 ruptures, ccxt, mapie 等
+├── run_pipeline.py                      # 主 pipeline: fetch→feature→PELT→build
 │
-├── pipeline/                        # 数据管道（大部分复用 v1）
-│   ├── fetch_btc.py                 # 复用
-│   ├── fetch_macro.py               # 复用
-│   ├── fetch_onchain.py             # 复用
-│   ├── feature_engineering.py       # 修：rolling z-score 替代全局
-│   ├── regime_detection.py          # 新：BOCPD 替代硬编码
-│   └── build_dataset.py             # 修：统一 schema，context/future/covariates
+├── pipeline/
+│   ├── fetch_btc.py                     # BTC daily from 2010 (Yahoo)
+│   ├── fetch_macro.py                   # 宏观数据 from 2010
+│   ├── fetch_onchain.py                 # 链上数据
+│   ├── fetch_multi_asset.py             # ETH/SOL/BNB/DOGE/LINK daily
+│   ├── fetch_5min.py                    # 6 资产 5min (Binance from 2017)
+│   ├── fetch_hourly.py                  # 6 资产 hourly (CryptoCompare+Binance)
+│   ├── fetch_1min.py                    # CryptoCompare 1min (future use)
+│   ├── merge_kraken.py                  # Kraken 早期数据合并
+│   ├── feature_engineering.py           # Rolling 252d z-score + 7d lag
+│   ├── regime_detection.py              # ruptures PELT
+│   ├── regime_labeling.py               # 硬编码 fallback (PELT 失败时)
+│   └── build_multi_asset_dataset.py     # {context, future, dates, regime}
 │
 ├── experiments/
-│   ├── phase0_baselines.py          # 修：修 z-score 后重跑 baseline
-│   ├── phase1_regime.py             # 修：BOCPD + transition detection 评估
-│   ├── phase2_finetune.py           # 重写：用 TimesFM 原生 fine-tune API
-│   └── phase3_risk_signals.py       # 新：VaR / anomaly / uncertainty 输出
+│   ├── phase0_baselines.py              # AR, ARIMA baselines
+│   ├── phase1_regime_classifier.py      # XGBoost regime (legacy)
+│   ├── phase05_smoke_test.py            # ★ Zero-shot + conformal (DGX)
+│   ├── phase2_finetune.py               # ★ Progressive fine-tune (DGX)
+│   ├── phase3_risk_signals.py           # ★ Risk signal output (DGX)
+│   └── phase3_inference.py              # Legacy inference (deprecated)
 │
-├── models/                          # 模型存储
-├── results/                         # 实验结果
-└── data/
-    ├── raw/                         # 原始数据（复用）
-    └── processed/                   # 处理后数据
+├── data/raw/                            # 原始数据 (gitignored)
+├── data/processed/                      # Processed 数据 (gitignored)
+├── models/                              # 模型文件 (gitignored)
+└── results/                             # 实验结果
 ```
 
----
+## Deferred (Phase II+)
 
-## 修复计划（按优先级）
-
-### Phase 0: 修基础设施（1天）
-
-**0.1 修 feature_engineering.py — rolling z-score**
-```python
-# 旧：全局 StandardScaler（前视偏差）
-scaler = StandardScaler()
-out[cols] = scaler.fit_transform(out[cols])
-
-# 新：rolling 252天窗口
-for col in numeric_cols:
-    rolling_mean = df[col].rolling(252, min_periods=60).mean()
-    rolling_std  = df[col].rolling(252, min_periods=60).std()
-    df[f"{col}"] = (df[col] - rolling_mean) / rolling_std.clip(lower=1e-8)
-```
-
-**0.2 统一数据 schema**
-```python
-# 所有 builder 统一输出格式：
-{
-    "context": [...],         # 历史价格序列（512点）
-    "future": [...],          # 未来价格序列（预测目标）
-    "covariates": [[...]],    # 协变量矩阵
-    "regime": "late",         # regime 标签
-    "dates": [...]            # 日期
-}
-```
-
-**0.3 修 exception handling**
-所有 `except: continue` 改成：
-```python
-except Exception as e:
-    logger.warning(f"Batch {batch_idx} failed: {e}")
-    failed_count += 1
-    if failed_count > max_failures:
-        raise RuntimeError(f"Too many failures ({failed_count})")
-```
-
-### Phase 1: 修 Regime Detection（1天）
-
-**1.1 用 BOCPD 替代硬编码**
-```python
-# Bayesian Online Changepoint Detection
-# 不需要预设断点，实时检测 regime 变化
-from bayesian_changepoint_detection.online_changepoint_detection import OnlineCPD
-
-# 或者用 ruptures 库的 PELT：
-import ruptures
-algo = ruptures.Pelt(model="rbf").fit(signal)
-breakpoints = algo.predict(pen=10)
-```
-
-**1.2 Regime classifier 改为 transition detector**
-评估指标从"分类准确率"改为：
-- Transition detection lag：检测到 regime 变化的延迟（天数）
-- False alarm rate：误报率
-- Soft probability calibration：概率输出是否校准
-
-### Phase 2: 修 Fine-tune（核心，2天）
-
-**2.1 用 TimesFM 原生 fine-tune API**
-
-TimesFM 2.5 提供了 `TimesFMFinetuner`，不需要自己写训练循环：
-
-```python
-import timesfm
-
-# 加载模型
-model = timesfm.TimesFM_2p5_200M_torch.from_pretrained(
-    "google/timesfm-2.5-200m-pytorch"
-)
-
-# 准备数据（pandas DataFrame 格式）
-# TimesFM fine-tune 接受 DataFrame，不需要自己切 context/future
-train_df = pd.DataFrame({
-    "unique_id": ids,        # 时间序列标识
-    "ds": dates,             # 时间戳
-    "y": values,             # 目标值
-    # covariates 作为额外列
-})
-
-# Fine-tune（内部处理梯度、scheduler、early stopping）
-finetuner = timesfm.TimesFMFinetuner(
-    model=model,
-    train_dataset=train_df,
-    learning_rate=1e-4,
-    num_epochs=50,
-    batch_size=256,
-    early_stopping_patience=10,
-)
-finetuner.train()
-model.save_pretrained("models/finetuned")
-```
-
-如果 TimesFM 的 fine-tune API 不支持 PyTorch（只支持 JAX），
-则需要用 JAX 版本：
-```python
-model = timesfm.TimesFM_2p5_200M_jax.from_pretrained(
-    "google/timesfm-2.5-200m-jax"
-)
-```
-
-**2.2 备选方案：手写训练循环但修梯度流**
-
-如果原生 API 不可用，手写循环需要：
-```python
-# 不用 model.forecast()，直接调用模型的 forward pass
-model.train()
-for ctx_b, fut_b in loader:
-    ctx_b, fut_b = ctx_b.to(device), fut_b.to(device)
-    optimizer.zero_grad()
-
-    # 直接调用模型的 forward 方法（不是 forecast）
-    # TimesFM 的内部结构是 decoder-only transformer
-    # 需要查看源码确认 forward 的签名
-    output = model.backbone(ctx_b)  # 保持在计算图内
-    pred = model.head(output, horizon=fut_b.shape[1])
-
-    loss = log_mse_loss(pred, fut_b)
-    loss.backward()  # 梯度正确流回 model 参数
-    optimizer.step()
-```
-
-**2.3 实验设计**
-
-| Exp | 描述 | 数据 | 预期 |
-|-----|------|------|------|
-| 2.1 | Zero-shot baseline | 无 fine-tune | Sharpe ~0.26（参考论文）|
-| 2.2 | Daily fine-tune | 820 daily samples | Sharpe 0.3-0.5 |
-| 2.3 | Progressive: 5min→hourly→daily | 20K→13K→820 | Sharpe 0.4-0.6 |
-| 2.4 | Regime-conditional | 分 regime fine-tune | 比 2.3 稍好 |
-
-### Phase 3: 风险信号系统（核心价值，1天）
-
-**3.1 Quantile forecast 提取**
-```python
-# TimesFM 2.5 原生支持 quantile output
-model.compile(timesfm.ForecastConfig(
-    max_context=512,
-    max_horizon=30,
-    use_continuous_quantile_head=True,  # 开启分位数输出
-))
-
-point_forecast, quantile_forecast = model.forecast(
-    horizon=30, inputs=[context]
-)
-# quantile_forecast shape: [batch, horizon, num_quantiles]
-# 默认 quantiles: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
-```
-
-**3.2 风险信号计算**
-```python
-def compute_risk_signals(actual, quantiles):
-    median = quantiles[:, 4]      # 50th percentile
-    q10 = quantiles[:, 0]         # 10th percentile
-    q90 = quantiles[:, 8]         # 90th percentile
-    iqr = q90 - q10               # interquartile range
-
-    return {
-        "var_5pct": q10,                              # VaR (5%)
-        "anomaly_score": abs(actual - median) / iqr,  # 超过2 = 异常
-        "uncertainty": iqr / abs(median).clip(1e-8),   # 不确定性比率
-        "position_weight": 1.0 / uncertainty,          # 仓位建议
-        "regime_stress": regime_transition_prob,        # 来自 Layer 1
-    }
-```
-
-**3.3 评估指标**
-
-| 指标 | 计算方式 | 目标 |
-|------|----------|------|
-| Quantile calibration | 实际落在各分位数内的比例 vs 理论比例 | 偏差 < 5% |
-| VaR breach rate | 实际 < VaR 的频率 | 接近 5%（不是0%也不是20%） |
-| Anomaly precision | anomaly_score > 2 时，后续5天是否真的有大波动 | > 60% |
-| Uncertainty-weighted Sharpe | 用 position_weight 做仓位管理后的 Sharpe | > 0.5 |
-| Regime transition lag | 从 BOCPD 检测到真实 regime 变化的延迟 | < 14天 |
-
----
-
-## 对 CoinSummer 的实际价值
-
-这套系统不是交易策略，是风险仪表盘：
-
-1. **每日 VaR report**：告诉你"今天持仓的最大预期亏损是多少"
-2. **Anomaly alert**：市场行为偏离模型预期时报警（可能是黑天鹅前兆）
-3. **Regime transition signal**：宏观环境在变，提前调仓
-4. **Position sizing**：不确定性高的时候自动减仓
-5. **跨资产比较**：同一个模型跑 BTC/ETH/SOL，比较谁的 uncertainty 更大
-
----
-
-## 时间线
-
-| 阶段 | 工作 | 耗时 | 在哪跑 |
-|------|------|------|--------|
-| Phase 0 | 修基础设施（z-score、schema、exception） | 1天 | Mac |
-| Phase 1 | BOCPD regime detection | 1天 | Mac |
-| Phase 2 | TimesFM fine-tune（修梯度流） | 2天 | DGX |
-| Phase 3 | 风险信号系统 | 1天 | DGX |
-| 验证 | 跑全量实验 + 写报告 | 1天 | DGX |
-| **总计** | | **~6天** | |
-
----
-
-## 待确认
-
-1. TimesFM PyTorch 版本是否有原生 fine-tune API？需要在 DGX 上 `pip install timesfm[torch]` 后检查 `dir(timesfm)` 确认。如果没有，需要用 JAX 版本或手写正确的训练循环
-2. BOCPD 库是否支持 ARM？备选是 `ruptures`（纯 Python，肯定能跑）
-3. 是否需要扩展到 ETH/SOL？当前只有 BTC 数据管道
+- Covariates in fine-tuning (需要 JAX 或 PyTorch covariate API)
+- BOCPD online regime detection
+- Multi-model ensemble (TimesFM + Chronos + Moirai)
+- CoinSummer 日度报告 + Streamlit dashboard
+- 论文写作
+- 1min 数据训练

@@ -68,9 +68,10 @@ def main():
     # ── 6. PELT regime detection ──
     step("6/8  PELT regime detection")
     from pipeline.regime_detection import detect_regimes, run_all_assets, label_from_breakpoints
-    # Run PELT on BTC daily returns
-    btc_returns = full_df["btc_daily_return"].dropna()
-    asset_returns = {"btc": btc_returns}
+    # Run PELT on RAW returns (not z-scored) — z-score removes level shifts PELT needs
+    # Use 'normal' cost model (detects mean+variance shifts), min_size=365 for major regimes
+    btc_raw_returns = np.log(merged["btc_close"] / merged["btc_close"].shift(1)).dropna()
+    asset_returns = {"btc": btc_raw_returns}
     # If multi-asset price files exist, add them
     for asset_name in ["eth", "sol", "bnb"]:
         asset_path = DATA_RAW / f"{asset_name}_price.parquet"
@@ -84,7 +85,22 @@ def main():
                     asset_returns[asset_name] = adf_returns
             except (ValueError, KeyError) as e:
                 logger.warning(f"Failed to load {asset_name} for PELT: {e}")
-    pelt_result = run_all_assets(asset_returns)
+    # BTC has ~10 years of data: use min_size=365 for major regimes
+    # Other assets shorter: use min_size=180
+    from pipeline.regime_detection import detect_regimes
+    all_breakpoints = {}
+    for asset, rets in asset_returns.items():
+        ms = 365 if len(rets) > 2000 else 180
+        bps = detect_regimes(rets, model="normal", min_size=ms, target_n_regimes=(3, 5))
+        all_breakpoints[asset] = bps
+    pelt_result = {
+        "breakpoints": {k: [str(d.date()) for d in v] for k, v in all_breakpoints.items()},
+        "sync_report": [],
+    }
+    if len(all_breakpoints) > 1:
+        from pipeline.regime_detection import cross_asset_sync
+        sync_df = cross_asset_sync(all_breakpoints)
+        pelt_result["sync_report"] = sync_df.to_dict(orient="records")
     bp_path = DATA_PROC / "regime_breakpoints.json"
     with open(bp_path, "w") as f:
         json.dump(pelt_result, f, indent=2)

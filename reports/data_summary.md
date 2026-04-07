@@ -1,6 +1,6 @@
 # BTC Regime Data Pipeline — Quality Report
 
-Generated: 2026-04-07 17:12
+Generated: 2026-04-07 18:12
 
 ## Raw Data Summary
 
@@ -41,7 +41,7 @@ Generated: 2026-04-07 17:12
 
 ## PELT Regime Detection
 
-- **btc**: 0 breakpoints
-- **eth**: 45 breakpoints
-- **sol**: 30 breakpoints
-- **bnb**: 45 breakpoints
+- **btc**: 9 breakpoints
+- **eth**: 5 breakpoints
+- **sol**: 4 breakpoints
+- **bnb**: 5 breakpoints
