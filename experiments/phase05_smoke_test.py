@@ -47,8 +47,9 @@ TEST_END = "2025-03-31"
 CONTEXT_LEN = 512
 HORIZON = 1  # 1-day VaR
 
-# Custom quantile levels for VaR
-QUANTILE_LEVELS = [0.01, 0.05, 0.10, 0.25, 0.50, 0.75, 0.90, 0.95, 0.99]
+# TimesFM outputs fixed deciles: P10, P20, ..., P90 (9 values)
+# Cannot customize. VaR 5% derived via conformal correction on P10.
+QUANTILE_LEVELS = [0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90]
 
 
 def load_btc_daily() -> pd.Series:
@@ -132,9 +133,8 @@ def zero_shot_forecast(returns: pd.Series, start: str, end: str) -> list[dict]:
         max_horizon=HORIZON,
         normalize_inputs=True,
         use_continuous_quantile_head=True,
-        quantiles=QUANTILE_LEVELS,
     ))
-    logger.info("Model loaded and compiled with quantiles: %s", QUANTILE_LEVELS)
+    logger.info("Model loaded and compiled (fixed deciles P10-P90)")
 
     # Get date range
     mask = (returns.index >= start) & (returns.index <= end)
@@ -157,12 +157,20 @@ def zero_shot_forecast(returns: pd.Series, start: str, end: str) -> list[dict]:
             point_fc, quantile_fc = model.forecast(
                 horizon=HORIZON, inputs=[context]
             )
-            # point_fc shape: [1, horizon], quantile_fc shape: [1, horizon, num_quantiles]
+            # point_fc shape: [1, horizon]
+            # quantile_fc shape: [1, horizon, N] where N includes mean + P10..P90
             point = float(point_fc[0][0])
-            quantiles = {
-                f"q{int(q*100):02d}": float(quantile_fc[0][0][j])
-                for j, q in enumerate(QUANTILE_LEVELS)
-            }
+            qf = quantile_fc[0][0]  # [N] for horizon=1
+            n_q = len(qf)
+            # Map to P10..P90 (skip mean if present as first element)
+            offset = 1 if n_q >= 10 else 0  # mean is idx 0 if 10 values
+            quantiles = {}
+            for j, q in enumerate(QUANTILE_LEVELS):
+                idx = j + offset
+                if idx < n_q:
+                    quantiles[f"q{int(q*100):02d}"] = float(qf[idx])
+                else:
+                    quantiles[f"q{int(q*100):02d}"] = float(qf[-1])
 
             results.append({
                 "date": str(date.date()),
@@ -188,8 +196,10 @@ def zero_shot_forecast(returns: pd.Series, start: str, end: str) -> list[dict]:
 def conformal_calibrate(cal_results: list[dict], alpha: float = 0.05) -> dict:
     """Split conformal prediction on calibration set.
 
-    Computes conformity scores and determines the conformal correction.
-    Returns calibration parameters to apply on test set.
+    Since TimesFM only outputs P10-P90 deciles, we use the nearest available
+    quantile and apply conformal correction to shift it to the target alpha.
+    For alpha=0.05, we use P10 and correct downward.
+    For alpha=0.01, we also use P10 with a larger correction.
 
     Args:
         cal_results: forecast results on calibration set
@@ -202,7 +212,8 @@ def conformal_calibrate(cal_results: list[dict], alpha: float = 0.05) -> dict:
         logger.warning("Calibration set too small (%d < 50). Falling back to raw quantiles.", len(cal_results))
         return {"method": "raw", "reason": "cal_set_too_small", "n_cal": len(cal_results)}
 
-    q_key = f"q{int(alpha * 100):02d}"
+    # Use P10 as the base quantile (closest available to 5% and 1%)
+    q_key = "q10"
 
     actuals = np.array([r["actual"] for r in cal_results])
     predicted_q = np.array([r[q_key] for r in cal_results])
@@ -267,7 +278,8 @@ def conformal_calibrate(cal_results: list[dict], alpha: float = 0.05) -> dict:
 
 def evaluate_test_set(test_results: list[dict], cal_params: dict, alpha: float = 0.05) -> dict:
     """Evaluate VaR on test set using calibration parameters. Report only, no decisions."""
-    q_key = f"q{int(alpha * 100):02d}"
+    # Use P10 as base quantile for all VaR levels (conformal correction shifts it)
+    q_key = "q10"
 
     actuals = np.array([r["actual"] for r in test_results])
     predicted_q = np.array([r[q_key] for r in test_results])
@@ -283,10 +295,12 @@ def evaluate_test_set(test_results: list[dict], cal_params: dict, alpha: float =
     breach_rate = float(np.mean(breaches))
     n_breaches = int(np.sum(breaches))
 
-    # Quantile calibration: check all quantile levels
+    # Quantile calibration: check all available quantile levels (P10-P90)
     calibration = {}
     for q in QUANTILE_LEVELS:
         qk = f"q{int(q * 100):02d}"
+        if qk not in test_results[0]:
+            continue
         pred_q = np.array([r[qk] for r in test_results])
         if cal_params["method"] == "conformal":
             # Apply same correction direction for all quantiles

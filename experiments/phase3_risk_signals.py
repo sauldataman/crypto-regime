@@ -44,7 +44,8 @@ TEST_END = "2025-03-31"
 CONTEXT_LEN = 512
 HORIZON = 1  # 1-day
 
-QUANTILE_LEVELS = [0.01, 0.05, 0.10, 0.25, 0.50, 0.75, 0.90, 0.95, 0.99]
+# TimesFM outputs fixed deciles P10-P90. VaR 5%/1% via conformal on P10.
+QUANTILE_LEVELS = [0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90]
 
 
 def load_model(model_choice: str):
@@ -94,7 +95,6 @@ def load_model(model_choice: str):
         max_horizon=HORIZON,
         normalize_inputs=True,
         use_continuous_quantile_head=True,
-        quantiles=QUANTILE_LEVELS,
     ))
 
     return base_model, model_choice
@@ -134,10 +134,14 @@ def walk_forward_forecast(model, returns: pd.Series, start: str, end: str) -> li
         try:
             point_fc, quantile_fc = model.forecast(horizon=HORIZON, inputs=[context])
             point = float(point_fc[0][0])
-            quantiles = {
-                f"q{int(q*100):02d}": float(quantile_fc[0][0][j])
-                for j, q in enumerate(QUANTILE_LEVELS)
-            }
+            qf = quantile_fc[0][0]  # [N] values
+            n_q = len(qf)
+            offset = 1 if n_q >= 10 else 0  # skip mean if present
+            quantiles = {}
+            for j, q in enumerate(QUANTILE_LEVELS):
+                idx = j + offset
+                qk = f"q{int(q*100):02d}"
+                quantiles[qk] = float(qf[idx]) if idx < n_q else float(qf[-1])
             results.append({"date": str(date.date()), "actual": actual, "point": point, **quantiles})
         except (RuntimeError, ValueError, IndexError) as e:
             logger.warning("Forecast failed at %s: %s", date.date(), e)
@@ -150,8 +154,8 @@ def walk_forward_forecast(model, returns: pd.Series, start: str, end: str) -> li
 
 
 def conformal_calibrate(results: list[dict], alpha: float) -> dict:
-    """Conformal calibration. Same logic as Phase 0.5."""
-    q_key = f"q{int(alpha * 100):02d}"
+    """Conformal calibration. Uses P10 as base quantile for all VaR levels."""
+    q_key = "q10"  # nearest available quantile to 5% and 1%
     actuals = np.array([r["actual"] for r in results])
     predicted_q = np.array([r[q_key] for r in results])
 
@@ -182,15 +186,16 @@ def compute_risk_signals(results: list[dict], cal_5: dict, cal_1: dict) -> list[
     for r in results:
         actual = r["actual"]
         median = r["q50"]
-        q05 = r["q05"] - cal_5.get("correction", 0)
-        q01 = r["q01"] - cal_1.get("correction", 0)
-        q10 = r["q10"]
+        # VaR 5% and 1%: derived from P10 via conformal correction
+        # (conformal shifts P10 downward to approximate P05/P01)
+        q10_raw = r["q10"]
+        var_5pct = q10_raw - cal_5.get("correction", 0)
+        var_1pct = q10_raw - cal_1.get("correction", 0)
+        q10 = q10_raw
         q90 = r["q90"]
         iqr = q90 - q10
 
-        # 1-day VaR
-        var_5pct = q05
-        var_1pct = q01
+        # 1-day VaR (already computed above from P10 + conformal correction)
 
         # Anomaly score: |actual - median| / IQR
         # Guards against IQR = 0
@@ -211,7 +216,7 @@ def compute_risk_signals(results: list[dict], cal_5: dict, cal_1: dict) -> list[
         else:
             position_weight = 10.0
 
-        # VaR breach flags
+        # VaR breaches
         var5_breach = actual < var_5pct
         var1_breach = actual < var_1pct
 

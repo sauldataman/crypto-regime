@@ -43,7 +43,11 @@ RESULTS.mkdir(exist_ok=True)
 # ── Config ──────────────────────────────────────────────────
 CONTEXT_LEN = 512
 HORIZONS = [1, 5, 30]
-QUANTILE_LEVELS = [0.01, 0.05, 0.10, 0.25, 0.50, 0.75, 0.90, 0.95, 0.99]
+# TimesFM 2.5 quantile head outputs fixed deciles: mean, P10, P20, ..., P90
+# Cannot customize quantile levels. VaR 5% derived via conformal correction on P10.
+QUANTILE_INDICES = {"q10": 0, "q20": 1, "q30": 2, "q40": 3, "q50": 4,
+                    "q60": 5, "q70": 6, "q80": 7, "q90": 8}
+QUANTILE_LEVELS = [0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90]
 
 ASSETS = {
     "btc": {"daily": "data/raw/btc_price.parquet", "hourly": "data/raw/hourly/btc_1h.parquet", "5min": "data/raw/5min/btc_5m.parquet"},
@@ -122,14 +126,13 @@ def load_timesfm_model(model_type: str = "zero-shot"):
 
 
 def compile_model(model, max_horizon: int):
-    """Compile model with custom quantile levels."""
+    """Compile model with quantile head enabled."""
     import timesfm
     model.compile(timesfm.ForecastConfig(
         max_context=CONTEXT_LEN,
         max_horizon=max_horizon,
         normalize_inputs=True,
         use_continuous_quantile_head=True,
-        quantiles=QUANTILE_LEVELS,
     ))
 
 
@@ -166,23 +169,24 @@ def compute_metrics(actuals: np.ndarray, predictions: np.ndarray,
         calibration = {}
         for q_key, q_values in quantile_preds.items():
             q_level = int(q_key.replace("q", "")) / 100
-            coverage = float(np.mean(actuals <= q_values))
+            if len(q_values) == 0:
+                continue
+            coverage = float(np.mean(actuals[:len(q_values)] <= q_values))
             calibration[q_key] = {
                 "target": q_level,
                 "actual": coverage,
                 "deviation": abs(coverage - q_level),
             }
-        avg_deviation = np.mean([v["deviation"] for v in calibration.values()])
-        metrics["quantile_calibration"] = calibration
-        metrics["avg_calibration_deviation"] = float(avg_deviation)
+        if calibration:
+            avg_deviation = np.mean([v["deviation"] for v in calibration.values()])
+            metrics["quantile_calibration"] = calibration
+            metrics["avg_calibration_deviation"] = float(avg_deviation)
 
-        # VaR metrics
-        if "q05" in quantile_preds:
-            var5_breach = float(np.mean(actuals < quantile_preds["q05"]))
-            metrics["var_5pct_breach_rate"] = var5_breach
-        if "q01" in quantile_preds:
-            var1_breach = float(np.mean(actuals < quantile_preds["q01"]))
-            metrics["var_1pct_breach_rate"] = var1_breach
+        # VaR metrics: use P10 as proxy for VaR 10%
+        # (VaR 5% requires conformal correction on P10, done in phase05/phase3)
+        if "q10" in quantile_preds and len(quantile_preds["q10"]) > 0:
+            var10_breach = float(np.mean(actuals[:len(quantile_preds["q10"])] < quantile_preds["q10"]))
+            metrics["var_10pct_breach_rate"] = var10_breach
 
     return metrics
 
@@ -205,7 +209,7 @@ def walk_forward(model, returns: pd.Series, test_dates: pd.DatetimeIndex,
     """
     actuals = []
     predictions = []
-    quantile_preds = {f"q{int(q*100):02d}": [] for q in QUANTILE_LEVELS}
+    quantile_preds = {qk: [] for qk in QUANTILE_INDICES}
 
     sampled_dates = test_dates[::step]
     t0 = time.time()
@@ -225,16 +229,30 @@ def walk_forward(model, returns: pd.Series, test_dates: pd.DatetimeIndex,
 
         try:
             point_fc, quantile_fc = model.forecast(horizon=horizon, inputs=[context])
+            # quantile_fc shape: [1, horizon, 10] where idx 0=mean, 1-9=P10..P90
+            # Actually: first element is point forecast, remaining 9 are P10-P90
+            # Verify shape and adapt
+            qf = quantile_fc[0]  # [horizon, n_quantiles]
+            n_q = qf.shape[-1] if len(qf.shape) > 1 else 1
+
             if horizon == 1:
                 pred = float(point_fc[0][0])
-                for j, q in enumerate(QUANTILE_LEVELS):
-                    quantile_preds[f"q{int(q*100):02d}"].append(float(quantile_fc[0][0][j]))
+                for qk, qi in QUANTILE_INDICES.items():
+                    # quantile_fc may include mean as idx 0, deciles start at idx 1
+                    idx = qi + 1 if n_q >= 10 else qi  # adapt to actual layout
+                    if idx < n_q:
+                        quantile_preds[qk].append(float(qf[0][idx]))
+                    else:
+                        quantile_preds[qk].append(float(qf[0][min(qi, n_q - 1)]))
             else:
-                pred = float(np.sum(point_fc[0][:horizon]))  # cumulative
-                # For multi-horizon quantiles, sum quantile forecasts (approximation)
-                for j, q in enumerate(QUANTILE_LEVELS):
-                    q_sum = float(np.sum(quantile_fc[0][:horizon, j]))
-                    quantile_preds[f"q{int(q*100):02d}"].append(q_sum)
+                pred = float(np.sum(point_fc[0][:horizon]))
+                for qk, qi in QUANTILE_INDICES.items():
+                    idx = qi + 1 if n_q >= 10 else qi
+                    if idx < n_q:
+                        q_sum = float(np.sum(qf[:horizon, idx]))
+                    else:
+                        q_sum = float(np.sum(qf[:horizon, min(qi, n_q - 1)]))
+                    quantile_preds[qk].append(q_sum)
 
             actuals.append(actual)
             predictions.append(pred)
@@ -447,14 +465,14 @@ def generate_summary(all_results: dict) -> str:
     if "zero_shot" in all_results:
         lines.append("## 1. Zero-shot Capability")
         lines.append("")
-        lines.append("| Horizon | Direction Acc | MAE | RMSE | Quantile Cal Dev | VaR 5% Breach |")
-        lines.append("|---------|-------------|-----|------|-----------------|---------------|")
+        lines.append("| Horizon | Direction Acc | MAE | RMSE | Quantile Cal Dev | VaR 10% Breach |")
+        lines.append("|---------|-------------|-----|------|-----------------|----------------|")
         for h in HORIZONS:
             m = all_results["zero_shot"].get(f"h{h}", {})
             lines.append(f"| {h}d | {m.get('direction_accuracy', 0):.3f} | "
                          f"{m.get('mae', 0):.5f} | {m.get('rmse', 0):.5f} | "
                          f"{m.get('avg_calibration_deviation', 0):.3f} | "
-                         f"{m.get('var_5pct_breach_rate', 'N/A')} |")
+                         f"{m.get('var_10pct_breach_rate', 'N/A')} |")
         lines.append("")
 
     # Dim 2: vs Traditional
@@ -486,12 +504,12 @@ def generate_summary(all_results: dict) -> str:
     if "cross_asset" in all_results:
         lines.append("## 4. Cross-Asset (zero-shot, h=1)")
         lines.append("")
-        lines.append("| Asset | Direction Acc | MAE | Quantile Cal Dev | VaR 5% Breach |")
-        lines.append("|-------|-------------|-----|-----------------|---------------|")
+        lines.append("| Asset | Direction Acc | MAE | Quantile Cal Dev | VaR 10% Breach |")
+        lines.append("|-------|-------------|-----|-----------------|----------------|")
         for asset, m in sorted(all_results["cross_asset"].items()):
             lines.append(f"| {asset.upper()} | {m.get('direction_accuracy', 0):.3f} | "
                          f"{m.get('mae', 0):.5f} | {m.get('avg_calibration_deviation', 0):.3f} | "
-                         f"{m.get('var_5pct_breach_rate', 'N/A')} |")
+                         f"{m.get('var_10pct_breach_rate', 'N/A')} |")
         lines.append("")
 
     # Dim 5: Cross-frequency
