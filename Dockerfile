@@ -1,4 +1,6 @@
-FROM nvcr.io/nvidia/pytorch:26.02-py3
+# Use 25.11 (CUDA 13.0.2) — compatible with driver 580.x
+# 26.02 requires driver 590.48+ which is too new for DGX Spark (580.142)
+FROM nvcr.io/nvidia/pytorch:25.11-py3
 
 WORKDIR /workspace/crypto-regime
 
