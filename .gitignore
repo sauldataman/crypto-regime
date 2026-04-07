@@ -6,3 +6,6 @@ models/*.pt
 models/*.pkl
 __pycache__/
 .venv/
+data/raw/kraken/
+data/raw/1min/
+data/processed/regime_breakpoints.json
