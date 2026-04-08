@@ -1,0 +1,193 @@
+{
+  "phase": "3",
+  "model": "daily",
+  "calibration": {
+    "var_5pct": {
+      "method": "conformal",
+      "correction": 0.0030116121417592115,
+      "raw_coverage": 0.12644651425345751,
+      "adj_coverage": 0.04995766299745978
+    },
+    "var_1pct": {
+      "method": "isotonic_fallback",
+      "correction": 0.0
+    }
+  },
+  "evaluation": {
+    "n_days": 3541,
+    "var_5pct_breach_rate": 0.038407229596159276,
+    "var_5pct_breaches": 136,
+    "var_1pct_breach_rate": 0.1112680033888732,
+    "var_1pct_breaches": 394,
+    "anomaly_flags": 445,
+    "anomaly_precision": 0.8382022471910112,
+    "anomaly_threshold_avg": 0.7177888964858654,
+    "anomaly_threshold_range": [
+      0.36250820772566933,
+      1.813941133000674
+    ],
+    "avg_uncertainty": 2.1458339871739884,
+    "avg_position_weight": 0.5184656347207108,
+    "position_weight_range": [
+      0.1,
+      0.9833333333333333
+    ]
+  },
+  "comparison_vs_zero_shot": {
+    "zero_shot_breach_rate": 0.040145985401459854,
+    "fine_tuned_breach_rate": 0.038407229596159276,
+    "improvement_pp": 0.0017387558053005778
+  },
+  "signals_sample": [
+    {
+      "date": "2023-11-04 00:00:00",
+      "actual_return": -0.0005800030502545728,
+      "var_5pct": -0.0067265372856269426,
+      "var_1pct": -0.003714925143867731,
+      "var5_breach": false,
+      "var1_breach": false,
+      "anomaly_score": 0.11943254195147168,
+      "anomaly_flag": false,
+      "anomaly_threshold": 1.0,
+      "uncertainty_ratio": 0.007523099891841412,
+      "position_weight": 0.5,
+      "median_forecast": 0.0003184998931828886,
+      "iqr": 0.007523099891841412
+    },
+    {
+      "date": "2023-11-04 06:00:00",
+      "actual_return": 0.00043891401987955513,
+      "var_5pct": -0.006395069569603617,
+      "var_1pct": -0.003383457427844405,
+      "var5_breach": false,
+      "var1_breach": false,
+      "anomaly_score": 0.004753081535054164,
+      "anomaly_flag": false,
+      "anomaly_threshold": 1.0,
+      "uncertainty_ratio": 10.129618598338634,
+      "position_weight": 0.5,
+      "median_forecast": 0.0004736030532512814,
+      "iqr": 0.007298219716176391
+    },
+    {
+      "date": "2023-11-04 12:00:00",
+      "actual_return": 0.0013360943903781462,
+      "var_5pct": -0.006430838410065586,
+      "var_1pct": -0.0034192262683063745,
+      "var5_breach": false,
+      "var1_breach": false,
+      "anomaly_score": 0.13123618656668035,
+      "anomaly_flag": false,
+      "anomaly_threshold": 1.0,
+      "uncertainty_ratio": 7.7575865265068495,
+      "position_weight": 0.33333333333333337,
+      "median_forecast": 0.00036007195012643933,
+      "iqr": 0.007437144173309207
+    },
+    {
+      "date": "2023-11-04 18:00:00",
+      "actual_return": 0.0005464375714582595,
+      "var_5pct": -0.006304165501401836,
+      "var_1pct": -0.003292553359642625,
+      "var5_breach": false,
+      "var1_breach": false,
+      "anomaly_score": 0.03336181391439813,
+      "anomaly_flag": false,
+      "anomaly_threshold": 1.0,
+      "uncertainty_ratio": 8.893792848331683,
+      "position_weight": 0.75,
+      "median_forecast": 0.00031314263469539583,
+      "iqr": 0.006992873270064592
+    },
+    {
+      "date": "2023-11-05 00:00:00",
+      "actual_return": -0.002399197497166707,
+      "var_5pct": -0.006559985609979445,
+      "var_1pct": -0.003548373468220234,
+      "var5_breach": false,
+      "var1_breach": false,
+      "anomaly_score": 0.36006474969582364,
+      "anomaly_flag": false,
+      "anomaly_threshold": 1.0,
+      "uncertainty_ratio": 5.815451068096363,
+      "position_weight": 0.1,
+      "median_forecast": 0.0006138947210274637,
+      "iqr": 0.008368195500224829
+    },
+    {
+      "date": "2023-11-05 06:00:00",
+      "actual_return": -0.00303896803097631,
+      "var_5pct": -0.006826266566545779,
+      "var_1pct": -0.0038146544247865677,
+      "var5_breach": false,
+      "var1_breach": false,
+      "anomaly_score": 0.4165178014593588,
+      "anomaly_flag": false,
+      "anomaly_threshold": 1.0,
+      "uncertainty_ratio": 4.658255951516592,
+      "position_weight": 0.16666666666666663,
+      "median_forecast": 0.00035803078208118677,
+      "iqr": 0.008155710995197296
+    },
+    {
+      "date": "2023-11-05 12:00:00",
+      "actual_return": -6.755062986417387e-05,
+      "var_5pct": -0.006602452056736762,
+      "var_1pct": -0.0035908399149775505,
+      "var5_breach": false,
+      "var1_breach": false,
+      "anomaly_score": 0.043231726474880855,
+      "anomaly_flag": false,
+      "anomaly_threshold": 1.0,
+      "uncertainty_ratio": 4.715762248228398,
+      "position_weight": 0.2857142857142857,
+      "median_forecast": 0.00026101822732016444,
+      "iqr": 0.0076001789420843124
+    },
+    {
+      "date": "2023-11-05 18:00:00",
+      "actual_return": -0.0010759510871135947,
+      "var_5pct": -0.006640979009003455,
+      "var_1pct": -0.0036293668672442436,
+      "var5_breach": false,
+      "var1_breach": false,
+      "anomaly_score": 0.18751028143042375,
+      "anomaly_flag": false,
+      "anomaly_threshold": 1.0,
+      "uncertainty_ratio": 5.078948500813652,
+      "position_weight": 0.25,
+      "median_forecast": 0.00035656808177009225,
+      "iqr": 0.0076396833173930645
+    },
+    {
+      "date": "2023-11-06 00:00:00",
+      "actual_return": 0.001230538924882944,
+      "var_5pct": -0.007130267018706614,
+      "var_1pct": -0.004118654876947403,
+      "var5_breach": false,
+      "var1_breach": false,
+      "anomaly_score": 0.11512762249720719,
+      "anomaly_flag": false,
+      "anomaly_threshold": 1.0,
+      "uncertainty_ratio": 5.491124175340861,
+      "position_weight": 0.1,
+      "median_forecast": 0.00026057587820105255,
+      "iqr": 0.008425111416727304
+    },
+    {
+      "date": "2023-11-06 06:00:00",
+      "actual_return": 0.0013063107856547496,
+      "var_5pct": -0.007143712522716338,
+      "var_1pct": -0.004132100380957127,
+      "var5_breach": false,
+      "var1_breach": false,
+      "anomaly_score": 0.153547211914705,
+      "anomaly_flag": false,
+      "anomaly_threshold": 1.0,
+      "uncertainty_ratio": 5.243190198582614,
+      "position_weight": 0.30000000000000004,
+      "median_forecast": 6.32368610240519e-05,
+      "iqr": 0.008095711469650269
+    }
+  ]
+}
