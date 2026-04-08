@@ -1,7 +1,6 @@
 """Verified fine-tune recipe for TimesFM 2.5. Run on DGX."""
 import timesfm
 import torch
-import numpy as np
 
 print("=== Fine-tune proof of concept ===")
 m = timesfm.TimesFM_2p5_200M_torch.from_pretrained("google/timesfm-2.5-200m-pytorch")
@@ -10,124 +9,126 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 model = model.to(device)
 model.train()
 
-# Constants
-P = model.p        # 32 (input patch len)
-O = model.o        # 128 (output patch len)
-Q = model.q        # 10 (num quantiles incl point)
-ARIDX = model.aridx  # 5 (index for point forecast in quantile dim)
+P = model.p        # 32
+O = model.o        # 128
+Q = model.q        # 10
+ARIDX = model.aridx  # 5
 
 print(f"patch_in={P}, patch_out={O}, quantiles={Q}, point_idx={ARIDX}")
 
-# === Prepare training data ===
-# Simulate: 512 time points context -> predict next 128 points
 batch = 4
 seq_len = 512
-horizon = 128
-num_patches = seq_len // P  # 16
+num_patches = seq_len // P
 
-# Fake data (replace with real BTC returns)
+# === Approach 1: Loss in NORMALIZED space (skip RevIN denorm) ===
+print("\n=== Approach 1: Loss in normalized space ===")
 context = torch.randn(batch, seq_len).to(device)
-future = torch.randn(batch, horizon).to(device)
+future = torch.randn(batch, O).to(device)
 
-# === Patch the input (same as decode does internally) ===
 patched_inputs = context.reshape(batch, num_patches, P)
 patched_masks = torch.ones_like(patched_inputs, dtype=torch.bool)
 
-# === Running stats for RevIN normalization ===
-from timesfm.torch.util import revin, update_running_stats
+# Simple normalization (no RevIN, just standardize)
+ctx_mean = context.mean(dim=1, keepdim=True)
+ctx_std = context.std(dim=1, keepdim=True).clamp(min=1e-8)
+normed_context = (context - ctx_mean) / ctx_std
+normed_future = (future - ctx_mean) / ctx_std
 
-n = torch.zeros(batch, device=device)
-mu = torch.zeros(batch, device=device)
-sigma = torch.zeros(batch, device=device)
-patch_mus, patch_sigmas = [], []
+normed_patched = normed_context.reshape(batch, num_patches, P)
 
-for i in range(num_patches):
-    (n, mu, sigma), _ = update_running_stats(
-        n, mu, sigma, patched_inputs[:, i], patched_masks[:, i]
-    )
-    patch_mus.append(mu)
-    patch_sigmas.append(sigma)
+optimizer = torch.optim.Adam(model.parameters(), lr=1e-5)
+optimizer.zero_grad()
 
-context_mu = torch.stack(patch_mus, dim=1)    # [batch, patches]
-context_sigma = torch.stack(patch_sigmas, dim=1)
+(_, _, output_ts, _), _ = model(normed_patched, patched_masks)
+# output_ts: [batch, 16, 1280] = [batch, 16, O*Q]
+# Reshape to [batch, 16, 128, 10]
+output_reshaped = output_ts.reshape(batch, num_patches, O, Q)
+# Point forecast from last patch
+pred = output_reshaped[:, -1, :, ARIDX]  # [batch, 128]
 
-# === Normalize input ===
-normed_inputs = revin(patched_inputs, context_mu, context_sigma, reverse=False)
-normed_inputs = torch.where(patched_masks, normed_inputs, torch.zeros_like(normed_inputs))
-
-# === Forward pass (WITH gradients, unlike decode which uses no_grad) ===
-(_, _, normed_output_ts, normed_output_qs), _ = model(normed_inputs, patched_masks)
-
-# === Denormalize and reshape output ===
-# normed_output_ts: [batch, patches, 1280] = [batch, patches, O*Q] = [batch, patches, 128*10]
-renormed_outputs = revin(normed_output_ts, context_mu, context_sigma, reverse=True)
-renormed_outputs = renormed_outputs.reshape(batch, num_patches, O, Q)
-# Shape: [batch, 16, 128, 10]
-
-# Point forecast from last patch, using ARIDX
-point_pred = renormed_outputs[:, -1, :, ARIDX]  # [batch, 128]
-print(f"Point prediction shape: {point_pred.shape}")  # [4, 128]
-
-# === Compute loss ===
-# Match horizon: we predicted 128 steps, target is 128 steps
-loss = ((point_pred - future) ** 2).mean()
-print(f"Loss: {loss.item():.6f}")
-
-# === Backward ===
+loss = ((pred - normed_future) ** 2).mean()
 loss.backward()
 
 grad_norm = sum(p.grad.norm().item() for p in model.parameters() if p.grad is not None)
 n_grads = sum(1 for p in model.parameters() if p.grad is not None)
-total = sum(1 for _ in model.parameters())
-
+print(f"Loss: {loss.item():.6f}")
 print(f"Grad norm: {grad_norm:.4f}")
-print(f"Params with grad: {n_grads}/{total}")
-print(f"FINE-TUNE: {'CONFIRMED WORKING' if grad_norm > 0 else 'FAILED'}")
+print(f"Params with grad: {n_grads}/{sum(1 for _ in model.parameters())}")
+print(f"GRADIENT FLOW: {'YES' if grad_norm > 0 else 'NO'}")
 
+# === Approach 2: Direct loss on raw output (no reshape) ===
+print("\n=== Approach 2: Direct loss on raw output_ts ===")
+optimizer.zero_grad()
+(_, _, output_ts2, _), _ = model(normed_patched, patched_masks)
+# Use last patch output directly, MSE against random target
+target2 = torch.randn_like(output_ts2[:, -1:, :])  # [batch, 1, 1280]
+loss2 = ((output_ts2[:, -1:, :] - target2) ** 2).mean()
+loss2.backward()
+
+grad_norm2 = sum(p.grad.norm().item() for p in model.parameters() if p.grad is not None)
+print(f"Loss: {loss2.item():.6f}")
+print(f"Grad norm: {grad_norm2:.4f}")
+print(f"GRADIENT FLOW: {'YES' if grad_norm2 > 0 else 'NO'}")
+
+# === Approach 3: Check if reshape breaks gradients ===
+print("\n=== Approach 3: Debug reshape gradient ===")
+optimizer.zero_grad()
+(_, _, output_ts3, _), _ = model(normed_patched, patched_masks)
+print(f"output_ts3 requires_grad: {output_ts3.requires_grad}")
+print(f"output_ts3 grad_fn: {output_ts3.grad_fn}")
+
+reshaped = output_ts3.reshape(batch, num_patches, O, Q)
+print(f"reshaped requires_grad: {reshaped.requires_grad}")
+print(f"reshaped grad_fn: {reshaped.grad_fn}")
+
+indexed = reshaped[:, -1, :, ARIDX]
+print(f"indexed requires_grad: {indexed.requires_grad}")
+print(f"indexed grad_fn: {indexed.grad_fn}")
+
+target3 = torch.randn_like(indexed)
+loss3 = ((indexed - target3) ** 2).mean()
+print(f"loss3 requires_grad: {loss3.requires_grad}")
+print(f"loss3 grad_fn: {loss3.grad_fn}")
+
+loss3.backward()
+grad_norm3 = sum(p.grad.norm().item() for p in model.parameters() if p.grad is not None)
+print(f"Grad norm: {grad_norm3:.4f}")
+print(f"GRADIENT FLOW: {'YES' if grad_norm3 > 0 else 'NO'}")
+
+# === If any approach works, do optimization test ===
+best_approach = None
 if grad_norm > 0:
-    # Do one optimizer step to prove it works end-to-end
+    best_approach = "Approach 1 (normalized space)"
+elif grad_norm2 > 0:
+    best_approach = "Approach 2 (raw output)"
+elif grad_norm3 > 0:
+    best_approach = "Approach 3 (reshape debug)"
+
+if best_approach:
+    print(f"\n{'='*50}")
+    print(f"FINE-TUNE WORKS via {best_approach}")
+    print(f"{'='*50}")
+
+    # Prove optimization works: 3 steps, loss should decrease
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-5)
-    optimizer.zero_grad()
+    losses = []
+    for step in range(3):
+        optimizer.zero_grad()
+        (_, _, out, _), _ = model(normed_patched, patched_masks)
+        if best_approach == "Approach 2 (raw output)":
+            target = torch.randn_like(out[:, -1:, :]) if step == 0 else target
+            l = ((out[:, -1:, :] - target) ** 2).mean()
+        else:
+            out_r = out.reshape(batch, num_patches, O, Q)
+            pred = out_r[:, -1, :, ARIDX]
+            target = normed_future if step == 0 else target
+            l = ((pred - target) ** 2).mean()
+        l.backward()
+        optimizer.step()
+        losses.append(l.item())
+        print(f"  Step {step}: loss={l.item():.6f}")
 
-    # Second forward pass
-    (_, _, normed_out2, _), _ = model(normed_inputs, patched_masks)
-    renormed2 = revin(normed_out2, context_mu, context_sigma, reverse=True)
-    renormed2 = renormed2.reshape(batch, num_patches, O, Q)
-    pred2 = renormed2[:, -1, :, ARIDX]
-    loss2 = ((pred2 - future) ** 2).mean()
-    loss2.backward()
-    optimizer.step()
-
-    # Third forward to check loss decreased
-    with torch.no_grad():
-        (_, _, normed_out3, _), _ = model(normed_inputs, patched_masks)
-        renormed3 = revin(normed_out3, context_mu, context_sigma, reverse=True)
-        renormed3 = renormed3.reshape(batch, num_patches, O, Q)
-        pred3 = renormed3[:, -1, :, ARIDX]
-        loss3 = ((pred3 - future) ** 2).mean()
-
-    print(f"\nAfter 1 optimizer step:")
-    print(f"  Loss before: {loss2.item():.6f}")
-    print(f"  Loss after:  {loss3.item():.6f}")
-    print(f"  Improved: {loss3.item() < loss2.item()}")
-
-    print("\n" + "=" * 50)
-    print("FINE-TUNE RECIPE VERIFIED")
-    print("=" * 50)
-    print(f"""
-Steps:
-  1. model = m.model.to(device)  # get the real nn.Module
-  2. model.train()
-  3. Patch input: x.reshape(batch, num_patches, {P})
-  4. Compute running stats for RevIN normalization
-  5. Normalize: revin(patched_input, mu, sigma, reverse=False)
-  6. Forward: (_, _, output_ts, output_qs), _ = model(normed, masks)
-  7. Denormalize: revin(output_ts, mu, sigma, reverse=True)
-  8. Reshape: output.reshape(batch, patches, {O}, {Q})
-  9. Point forecast: output[:, -1, :, {ARIDX}]  # last patch, point index
-  10. Loss + backward + optimizer step
-
-Input:  [batch, {num_patches}, {P}] = patched context ({seq_len} points)
-Output: [batch, {num_patches}, {O}, {Q}] = {O}-step forecast x {Q} quantiles
-Target: [batch, {horizon}] = future returns
-""")
+    print(f"  Loss trend: {losses[0]:.4f} -> {losses[-1]:.4f} ({'decreasing' if losses[-1] < losses[0] else 'NOT decreasing'})")
+else:
+    print("\n*** ALL APPROACHES FAILED ***")
+    print("Need to investigate RevIN / model internals further")
