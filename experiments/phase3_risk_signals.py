@@ -101,19 +101,27 @@ def load_model(model_choice: str):
     return base_model, model_choice
 
 
-def load_btc_returns() -> pd.Series:
-    """Load BTC daily returns."""
-    processed = ROOT / "data/processed/btc_full.parquet"
-    if processed.exists():
-        df = pd.read_parquet(processed).sort_index()
-        if "btc_daily_return" in df.columns:
-            return df["btc_daily_return"].dropna()
+def load_btc_returns(freq: str = "daily") -> pd.Series:
+    """Load BTC returns at specified frequency."""
+    if freq == "daily":
+        processed = ROOT / "data/processed/btc_full.parquet"
+        if processed.exists():
+            df = pd.read_parquet(processed).sort_index()
+            if "btc_daily_return" in df.columns:
+                return df["btc_daily_return"].dropna()
+        raw = ROOT / "data/raw/btc_price.parquet"
+    elif freq == "hourly":
+        raw = ROOT / "data/raw/hourly/btc_1h.parquet"
+    elif freq == "5min":
+        raw = ROOT / "data/raw/5min/btc_5m.parquet"
+    else:
+        raise ValueError(f"Unknown freq: {freq}")
 
-    raw = ROOT / "data/raw/btc_price.parquet"
     df = pd.read_parquet(raw).sort_index()
+    df.index = pd.to_datetime(df.index)
     close_col = [c for c in df.columns if "close" in c.lower()][0]
     returns = np.log(df[close_col] / df[close_col].shift(1)).dropna()
-    returns.name = "btc_daily_return"
+    returns.name = f"btc_{freq}_return"
     return returns
 
 
@@ -344,6 +352,9 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", choices=["auto", "zero-shot", "progressive", "daily"],
                         default="auto")
+    parser.add_argument("--freq", choices=["daily", "hourly", "5min"],
+                        default="daily",
+                        help="Data frequency for evaluation")
     args = parser.parse_args()
 
     logger.info("=" * 60)
@@ -358,23 +369,92 @@ def main():
         return
 
     # Load data
-    returns = load_btc_returns()
-    logger.info("BTC returns: %d rows (%s -> %s)", len(returns),
+    freq = args.freq
+    returns = load_btc_returns(freq)
+    logger.info("BTC %s returns: %d rows (%s -> %s)", freq, len(returns),
                 returns.index[0].date(), returns.index[-1].date())
 
-    # Calibration set forecast
-    logger.info("\n=== Calibration Set ===")
-    cal_results = walk_forward_forecast(model, returns, CAL_START, CAL_END)
+    # For hourly/5min, use last 20% as test (no fixed date split)
+    if freq != "daily":
+        n = len(returns)
+        cal_start_idx = int(n * 0.6)
+        cal_end_idx = int(n * 0.8)
+        test_start_idx = int(n * 0.8)
+        CAL_START_DYN = str(returns.index[cal_start_idx].date())
+        CAL_END_DYN = str(returns.index[cal_end_idx].date())
+        TEST_START_DYN = str(returns.index[test_start_idx].date())
+        TEST_END_DYN = str(returns.index[-1].date())
+        logger.info("  Dynamic split: cal=%s~%s, test=%s~%s",
+                     CAL_START_DYN, CAL_END_DYN, TEST_START_DYN, TEST_END_DYN)
 
-    # Conformal calibration (decisions made here)
+    # Use dynamic split for non-daily frequencies
+    cal_s = CAL_START_DYN if freq != "daily" else CAL_START
+    cal_e = CAL_END_DYN if freq != "daily" else CAL_END
+    test_s = TEST_START_DYN if freq != "daily" else TEST_START
+    test_e = TEST_END_DYN if freq != "daily" else TEST_END
+
+    # Subsample for speed on high-freq data
+    step = 1 if freq == "daily" else (6 if freq == "hourly" else 60)
+
+    # Calibration set forecast
+    logger.info("\n=== Calibration Set (%s) ===", freq)
+    cal_mask = (returns.index >= cal_s) & (returns.index <= cal_e)
+    cal_dates = returns.index[cal_mask][::step]
+    cal_results = []
+    for date in cal_dates:
+        loc = returns.index.get_loc(date)
+        if loc < CONTEXT_LEN:
+            continue
+        context = returns.iloc[loc - CONTEXT_LEN:loc].values.tolist()
+        actual = float(returns.iloc[loc])
+        try:
+            point_fc, quantile_fc = model.forecast(horizon=HORIZON, inputs=[context])
+            point = float(point_fc[0][0])
+            qf = quantile_fc[0][0]
+            n_q = len(qf)
+            offset = 1 if n_q >= 10 else 0
+            quantiles = {}
+            for j, q in enumerate(QUANTILE_LEVELS):
+                idx = j + offset
+                qk = f"q{int(q*100):02d}"
+                quantiles[qk] = float(qf[idx]) if idx < n_q else float(qf[-1])
+            cal_results.append({"date": str(date), "actual": actual, "point": point, **quantiles})
+        except (RuntimeError, ValueError, IndexError):
+            pass
+    logger.info("  Cal forecasts: %d", len(cal_results))
+
+    # Conformal calibration
     cal_5 = conformal_calibrate(cal_results, 0.05)
     cal_1 = conformal_calibrate(cal_results, 0.01)
     logger.info("VaR 5%% calibration: %s (correction=%.6f)", cal_5["method"], cal_5.get("correction", 0))
     logger.info("VaR 1%% calibration: %s (correction=%.6f)", cal_1["method"], cal_1.get("correction", 0))
 
     # Test set forecast
-    logger.info("\n=== Test Set ===")
-    test_results = walk_forward_forecast(model, returns, TEST_START, TEST_END)
+    logger.info("\n=== Test Set (%s) ===", freq)
+    test_mask = (returns.index >= test_s) & (returns.index <= test_e)
+    test_dates = returns.index[test_mask][::step]
+    test_results = []
+    for date in test_dates:
+        loc = returns.index.get_loc(date)
+        if loc < CONTEXT_LEN:
+            continue
+        context = returns.iloc[loc - CONTEXT_LEN:loc].values.tolist()
+        actual = float(returns.iloc[loc])
+        try:
+            point_fc, quantile_fc = model.forecast(horizon=HORIZON, inputs=[context])
+            point = float(point_fc[0][0])
+            qf = quantile_fc[0][0]
+            n_q = len(qf)
+            offset = 1 if n_q >= 10 else 0
+            quantiles = {}
+            for j, q in enumerate(QUANTILE_LEVELS):
+                idx = j + offset
+                qk = f"q{int(q*100):02d}"
+                quantiles[qk] = float(qf[idx]) if idx < n_q else float(qf[-1])
+            test_results.append({"date": str(date), "actual": actual, "point": point, **quantiles})
+        except (RuntimeError, ValueError, IndexError):
+            pass
+    logger.info("  Test forecasts: %d", len(test_results))
 
     # Compute risk signals
     signals = compute_risk_signals(test_results, cal_5, cal_1)
@@ -411,12 +491,13 @@ def main():
         "signals_sample": signals[:10],  # first 10 days as sample
     }
 
-    out_path = RESULTS / "phase3_risk_signals.json"
+    suffix = f"_{freq}" if freq != "daily" else ""
+    out_path = RESULTS / f"phase3_risk_signals{suffix}.json"
     out_path.write_text(json.dumps(output, indent=2))
     logger.info("\nResults: %s", out_path)
 
     # Save full signals
-    signals_path = RESULTS / "phase3_signals_full.json"
+    signals_path = RESULTS / f"phase3_signals_full{suffix}.json"
     signals_path.write_text(json.dumps(signals, indent=2))
     logger.info("Full signals: %s", signals_path)
 
