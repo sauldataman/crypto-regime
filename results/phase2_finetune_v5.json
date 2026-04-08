@@ -1,0 +1,20 @@
+{
+  "phase": "2_v5",
+  "recipe": "quantile_loss + all_patch_loss + augment + freeze_10 + crypto_70",
+  "crypto_weight": 0.7,
+  "freeze_layers": 10,
+  "stages": {
+    "daily": {
+      "status": "OK",
+      "stage": "daily",
+      "best_loss": 0.13723156698765676,
+      "final_epoch": 40,
+      "n_samples": 35581,
+      "data_stats": {
+        "n_crypto": 5350,
+        "n_tradfi": 30231,
+        "n_total": 35581
+      }
+    }
+  }
+}
