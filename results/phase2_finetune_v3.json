@@ -1,0 +1,14 @@
+{
+  "phase": "2_v3",
+  "recipe": "quantile_loss + freeze_bottom_15 + teacher_forcing",
+  "freeze_layers": 15,
+  "stages": {
+    "daily": {
+      "status": "OK",
+      "stage": "daily",
+      "best_loss": 0.4059685406213749,
+      "final_epoch": 30,
+      "n_samples": 5350
+    }
+  }
+}
