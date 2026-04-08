@@ -1,0 +1,134 @@
+{
+  "vix_yf": {
+    "start": "2010-01-04",
+    "end": "2026-04-08",
+    "count": 5406,
+    "missing_pct": 0.0
+  },
+  "move_index": {
+    "start": "2010-01-04",
+    "end": "2026-04-08",
+    "count": 5406,
+    "missing_pct": 0.0
+  },
+  "treasury_10y_yf": {
+    "start": "2010-01-04",
+    "end": "2026-04-08",
+    "count": 5406,
+    "missing_pct": 0.0
+  },
+  "treasury_5y_yf": {
+    "start": "2010-01-04",
+    "end": "2026-04-08",
+    "count": 5406,
+    "missing_pct": 0.0
+  },
+  "treasury_3m_yf": {
+    "start": "2010-01-04",
+    "end": "2026-04-08",
+    "count": 5406,
+    "missing_pct": 0.0
+  },
+  "sp500": {
+    "start": "2010-01-04",
+    "end": "2026-04-08",
+    "count": 5406,
+    "missing_pct": 0.0
+  },
+  "nasdaq": {
+    "start": "2010-01-04",
+    "end": "2026-04-08",
+    "count": 5406,
+    "missing_pct": 0.0
+  },
+  "russell_2000": {
+    "start": "2010-01-04",
+    "end": "2026-04-08",
+    "count": 5406,
+    "missing_pct": 0.0
+  },
+  "gold": {
+    "start": "2010-01-04",
+    "end": "2026-04-08",
+    "count": 5406,
+    "missing_pct": 0.0
+  },
+  "silver": {
+    "start": "2010-01-04",
+    "end": "2026-04-08",
+    "count": 5406,
+    "missing_pct": 0.0
+  },
+  "dxy_yf": {
+    "start": "2010-01-04",
+    "end": "2026-04-08",
+    "count": 5406,
+    "missing_pct": 0.0
+  },
+  "bito_etf": {
+    "start": "2021-10-20",
+    "end": "2026-04-08",
+    "count": 1632,
+    "missing_pct": 69.8
+  },
+  "fear_greed": {
+    "start": "2018-02-01",
+    "end": "2026-04-08",
+    "count": 2989,
+    "missing_pct": 44.7
+  },
+  "btc_mcap_proxy": {
+    "start": "2014-09-17",
+    "end": "2026-04-08",
+    "count": 4222,
+    "missing_pct": 21.9
+  },
+  "yield_curve_10y3m": {
+    "start": "2010-01-04",
+    "end": "2026-04-08",
+    "count": 5406,
+    "missing_pct": 0.0
+  },
+  "vix_change_5d": {
+    "start": "2010-01-11",
+    "end": "2026-04-08",
+    "count": 5401,
+    "missing_pct": 0.1
+  },
+  "vix_change_20d": {
+    "start": "2010-02-02",
+    "end": "2026-04-08",
+    "count": 5386,
+    "missing_pct": 0.4
+  },
+  "sp500_return_5d": {
+    "start": "2010-01-11",
+    "end": "2026-04-08",
+    "count": 5401,
+    "missing_pct": 0.1
+  },
+  "sp500_return_20d": {
+    "start": "2010-02-02",
+    "end": "2026-04-08",
+    "count": 5386,
+    "missing_pct": 0.4
+  },
+  "sp500_vol_20d": {
+    "start": "2010-02-02",
+    "end": "2026-04-08",
+    "count": 5386,
+    "missing_pct": 0.4
+  },
+  "gold_btc_ratio": {
+    "start": "2014-09-17",
+    "end": "2026-04-08",
+    "count": 4222,
+    "missing_pct": 21.9
+  },
+  "dxy_change_5d": {
+    "start": "2010-01-11",
+    "end": "2026-04-08",
+    "count": 5401,
+    "missing_pct": 0.1
+  }
+}
