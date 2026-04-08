@@ -1,0 +1,69 @@
+{
+  "phase": "II-D",
+  "description": "Macro-corrected TimesFM quantile forecasts",
+  "data_source": "real",
+  "training": {
+    "n_train": 293,
+    "n_val": 73,
+    "target_quantile": 0.05,
+    "train_metrics": {
+      "coverage": 0.05802047781569966,
+      "target_coverage": 0.05,
+      "pinball_loss": 0.050828476336975736,
+      "mae": 1.0038214269832193
+    },
+    "val_metrics": {
+      "coverage": 0.136986301369863,
+      "target_coverage": 0.05,
+      "pinball_loss": 0.1095955207784951,
+      "mae": 1.0126236952118357
+    },
+    "feature_importance": {
+      "iqr_rank_60d": 0.130921870470047,
+      "iqr": 0.11454389989376068,
+      "vix_z": 0.10964199900627136,
+      "dxy_z": 0.10888227820396423,
+      "treasury_10y_z": 0.10398433357477188,
+      "q10": 0.10148420929908752,
+      "q90": 0.0889129564166069,
+      "q50": 0.08456423878669739,
+      "sp500_z": 0.08254783600568771,
+      "btc_vol_30d": 0.07451638579368591,
+      "regime": 0.0
+    },
+    "xgb_params": {
+      "quantile_alpha": 0.05,
+      "max_depth": 4,
+      "learning_rate": 0.05,
+      "n_estimators": 200,
+      "subsample": 0.8,
+      "colsample_bytree": 0.8,
+      "min_child_weight": 5,
+      "reg_alpha": 0.1,
+      "reg_lambda": 1.0,
+      "random_state": 42
+    }
+  },
+  "evaluation": {
+    "n_test": 274,
+    "target_rate": 0.05,
+    "raw_timesfm": {
+      "breaches": 40,
+      "breach_rate": 0.145985401459854
+    },
+    "conformal_only": {
+      "breaches": 11,
+      "breach_rate": 0.040145985401459854,
+      "correction": 0.6654475352652585
+    },
+    "macro_corrected": {
+      "breaches": 37,
+      "breach_rate": 0.13503649635036497
+    },
+    "regime_conditional": {
+      "breaches": 37,
+      "breach_rate": 0.13503649635036497
+    }
+  },
+  "regime_vol_map": null
+}

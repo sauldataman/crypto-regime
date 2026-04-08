@@ -1,0 +1,70 @@
+{
+  "phase": "II-C",
+  "gpd_raw_returns": {
+    "params": {
+      "threshold": -1.0840032038180543,
+      "shape": -0.20642454755899295,
+      "scale": 0.9982178876856682,
+      "n_exceedances": 37,
+      "n_total": 366,
+      "converged": true
+    },
+    "var_5pct": -1.7380868528404285,
+    "var_1pct": -2.92014359908299,
+    "empirical_5pct": -1.6227094607854666,
+    "empirical_1pct": -3.0488040854910032,
+    "diagnostic": {
+      "ks_statistic": 0.09859807600950299,
+      "ks_pvalue": 0.8302319198895359,
+      "qq_rmse": 0.10132717242515689,
+      "qq_max_deviation": 0.30317498969990053,
+      "mean_excess_correlation": -0.7203053195409842,
+      "mean_excess_linear": false,
+      "shape_ci": [
+        -0.5680428908593673,
+        0.1551937957413814
+      ],
+      "shape_se": 0.18450254502265026,
+      "fit_acceptable": true
+    }
+  },
+  "evt_calibration": {
+    "var_5pct": {
+      "method": "evt",
+      "correction": 0.7037830593141675,
+      "gpd_params": {
+        "threshold": -0.16391138317760734,
+        "shape": -0.005575155927220007,
+        "scale": 0.7683507379806815,
+        "n_exceedances": 37,
+        "n_total": 366,
+        "converged": true
+      },
+      "target_alpha": 0.05,
+      "p10_coverage": 0.1284153005464481,
+      "cal_breach_rate": 0.04644808743169399,
+      "n_cal": 366
+    },
+    "var_1pct": {
+      "method": "evt",
+      "correction": 1.9300419137463527,
+      "gpd_params": {
+        "threshold": -0.16391138317760734,
+        "shape": -0.005575155927220007,
+        "scale": 0.7683507379806815,
+        "n_exceedances": 37,
+        "n_total": 366,
+        "converged": true
+      },
+      "target_alpha": 0.01,
+      "p10_coverage": 0.1284153005464481,
+      "cal_breach_rate": 0.01366120218579235,
+      "n_cal": 366
+    }
+  },
+  "test_evaluation": {
+    "var_5pct_breach_rate": 0.0364963503649635,
+    "var_1pct_breach_rate": 0.0036496350364963502,
+    "n_test": 274
+  }
+}
