@@ -65,7 +65,7 @@ def load_model(model_choice: str):
     elif model_choice == "progressive":
         ckpt = MODELS / "timesfm_progressive_best.pt"
         if ckpt.exists():
-            base_model.load_state_dict(torch.load(ckpt, weights_only=True))
+            base_model.model.load_state_dict(torch.load(ckpt, weights_only=True))
             logger.info("Loaded progressive fine-tuned model: %s", ckpt)
         else:
             logger.warning("Progressive checkpoint not found. Falling back to zero-shot.")
@@ -73,7 +73,7 @@ def load_model(model_choice: str):
     elif model_choice == "daily":
         ckpt = MODELS / "timesfm_daily_best.pt"
         if ckpt.exists():
-            base_model.load_state_dict(torch.load(ckpt, weights_only=True))
+            base_model.model.load_state_dict(torch.load(ckpt, weights_only=True))
             logger.info("Loaded daily fine-tuned model: %s", ckpt)
         else:
             logger.warning("Daily checkpoint not found. Falling back to zero-shot.")
@@ -83,7 +83,7 @@ def load_model(model_choice: str):
         for name in ["timesfm_progressive_best.pt", "timesfm_daily_best.pt"]:
             ckpt = MODELS / name
             if ckpt.exists():
-                base_model.load_state_dict(torch.load(ckpt, weights_only=True))
+                base_model.model.load_state_dict(torch.load(ckpt, weights_only=True))
                 logger.info("Auto-selected model: %s", ckpt)
                 model_choice = name.replace("timesfm_", "").replace("_best.pt", "")
                 break
