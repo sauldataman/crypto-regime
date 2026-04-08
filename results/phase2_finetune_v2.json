@@ -1,0 +1,13 @@
+{
+  "phase": "2_v2",
+  "recipe": "m.model + simple_standardization + no_RevIN",
+  "stages": {
+    "daily": {
+      "status": "OK",
+      "stage": "daily",
+      "best_loss": 0.8559086925969153,
+      "final_epoch": 50,
+      "n_samples": 5350
+    }
+  }
+}
