@@ -1,0 +1,37 @@
+{
+  "path_c_finetuner_api": {
+    "available": false,
+    "finetuner_names": [],
+    "source": null,
+    "submodules": [
+      "ForecastConfig",
+      "TimesFM_2p5_200M_torch"
+    ]
+  },
+  "path_b_model_internals": {
+    "is_nn_module": false,
+    "children": [],
+    "forward_works": false,
+    "forward_error": null,
+    "parameters_count": 0,
+    "trainable_params": 0,
+    "model_type": "<class 'timesfm.timesfm_2p5.timesfm_2p5_torch.TimesFM_2p5_200M_torch'>",
+    "error": "'TimesFM_2p5_200M_torch' object has no attribute 'to'"
+  },
+  "path_a_jax": {
+    "jax_available": false,
+    "jax_gpu": false,
+    "timesfm_jax": true,
+    "jax_install_cmd": "pip install \"jax[cuda12]\" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html",
+    "jax_model_attrs": [
+      "timesfm_2p5_base",
+      "timesfm_2p5_torch"
+    ],
+    "covariate_support": []
+  },
+  "recommendation": {
+    "path": "BLOCKED",
+    "reason": "No viable fine-tune path found. Neither Finetuner API, manual forward, nor JAX available.",
+    "action": "Options: (1) Install from PR #223 branch, (2) Install JAX with CUDA, (3) Wait for TimesFMFinetuner to be released on PyPI"
+  }
+}

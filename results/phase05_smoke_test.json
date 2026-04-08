@@ -1,0 +1,150 @@
+{
+  "phase": "0.5",
+  "status": "DONE",
+  "api_check": {
+    "timesfm_available": true,
+    "has_finetuner": false,
+    "finetuner_names": [],
+    "cuda": true,
+    "gpu": "NVIDIA GB10"
+  },
+  "temporal_split": {
+    "cal": "2023-07-01 to 2024-06-30",
+    "test": "2024-07-01 to 2025-03-31",
+    "context_len": 512,
+    "horizon": 1
+  },
+  "calibration_params": {
+    "var_5pct": {
+      "method": "conformal",
+      "alpha": 0.05,
+      "conformal_correction": 0.6654475352652585,
+      "raw_coverage_cal": 0.1284153005464481,
+      "corrected_coverage_cal": 0.04918032786885246,
+      "n_cal": 366
+    },
+    "var_1pct": {
+      "method": "isotonic_fallback",
+      "reason": "correction_too_large",
+      "raw_coverage": 0.1284153005464481,
+      "correction": 2.3377451262249136,
+      "n_cal": 366
+    }
+  },
+  "evaluation": {
+    "var_5pct": {
+      "n_test": 274,
+      "var_alpha": 0.05,
+      "breach_rate": 0.040145985401459854,
+      "n_breaches": 11,
+      "avg_calibration_deviation": 0.23114355231143552,
+      "calibration": {
+        "q10": {
+          "target": 0.1,
+          "actual": 0.040145985401459854,
+          "deviation": 0.05985401459854015
+        },
+        "q20": {
+          "target": 0.2,
+          "actual": 0.072992700729927,
+          "deviation": 0.127007299270073
+        },
+        "q30": {
+          "target": 0.3,
+          "actual": 0.11678832116788321,
+          "deviation": 0.18321167883211678
+        },
+        "q40": {
+          "target": 0.4,
+          "actual": 0.1678832116788321,
+          "deviation": 0.23211678832116792
+        },
+        "q50": {
+          "target": 0.5,
+          "actual": 0.20437956204379562,
+          "deviation": 0.2956204379562044
+        },
+        "q60": {
+          "target": 0.6,
+          "actual": 0.26277372262773724,
+          "deviation": 0.33722627737226274
+        },
+        "q70": {
+          "target": 0.7,
+          "actual": 0.35766423357664234,
+          "deviation": 0.3423357664233576
+        },
+        "q80": {
+          "target": 0.8,
+          "actual": 0.5036496350364964,
+          "deviation": 0.29635036496350364
+        },
+        "q90": {
+          "target": 0.9,
+          "actual": 0.6934306569343066,
+          "deviation": 0.2065693430656934
+        }
+      },
+      "gate_pass": true,
+      "gate_recommendation": "zero-shot sufficient"
+    },
+    "var_1pct": {
+      "n_test": 274,
+      "var_alpha": 0.01,
+      "breach_rate": 0.145985401459854,
+      "n_breaches": 40,
+      "avg_calibration_deviation": 0.017356042173560418,
+      "calibration": {
+        "q10": {
+          "target": 0.1,
+          "actual": 0.145985401459854,
+          "deviation": 0.045985401459854
+        },
+        "q20": {
+          "target": 0.2,
+          "actual": 0.20802919708029197,
+          "deviation": 0.008029197080291955
+        },
+        "q30": {
+          "target": 0.3,
+          "actual": 0.2956204379562044,
+          "deviation": 0.004379562043795582
+        },
+        "q40": {
+          "target": 0.4,
+          "actual": 0.38686131386861317,
+          "deviation": 0.013138686131386856
+        },
+        "q50": {
+          "target": 0.5,
+          "actual": 0.5072992700729927,
+          "deviation": 0.007299270072992692
+        },
+        "q60": {
+          "target": 0.6,
+          "actual": 0.6204379562043796,
+          "deviation": 0.020437956204379604
+        },
+        "q70": {
+          "target": 0.7,
+          "actual": 0.6970802919708029,
+          "deviation": 0.0029197080291970545
+        },
+        "q80": {
+          "target": 0.8,
+          "actual": 0.7773722627737226,
+          "deviation": 0.022627737226277422
+        },
+        "q90": {
+          "target": 0.9,
+          "actual": 0.8686131386861314,
+          "deviation": 0.031386861313868586
+        }
+      },
+      "gate_pass": false,
+      "gate_recommendation": "proceed to Phase 2"
+    }
+  },
+  "n_cal_forecasts": 366,
+  "n_test_forecasts": 274
+}
