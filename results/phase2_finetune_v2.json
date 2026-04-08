@@ -2,10 +2,24 @@
   "phase": "2_v2",
   "recipe": "m.model + simple_standardization + no_RevIN",
   "stages": {
+    "5min": {
+      "status": "OK",
+      "stage": "5min",
+      "best_loss": 1.0782299522369627,
+      "final_epoch": 20,
+      "n_samples": 40329
+    },
+    "hourly": {
+      "status": "OK",
+      "stage": "hourly",
+      "best_loss": 1.0048456805908752,
+      "final_epoch": 20,
+      "n_samples": 10706
+    },
     "daily": {
       "status": "OK",
       "stage": "daily",
-      "best_loss": 0.8559086925969153,
+      "best_loss": 0.729515886949208,
       "final_epoch": 50,
       "n_samples": 5350
     }
