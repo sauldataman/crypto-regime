@@ -1,0 +1,35 @@
+{
+  "phase": "2_v6",
+  "recipe": "tail_weighted_pinball + freeze_15 + hourly_daily_only + no_augment",
+  "changes_from_v4": [
+    "A: P10/P90 weight 3x, P20/P80 weight 2x in pinball loss",
+    "B: More epochs (30/40 vs 15/30)",
+    "C: Skip 5min stage (too noisy for risk management)"
+  ],
+  "stages": {
+    "hourly": {
+      "status": "OK",
+      "stage": "hourly",
+      "best_loss": 0.34245653592738,
+      "final_epoch": 30,
+      "n_samples": 40937,
+      "data_stats": {
+        "n_crypto": 10706,
+        "n_tradfi": 30231,
+        "n_total": 40937
+      }
+    },
+    "daily": {
+      "status": "OK",
+      "stage": "daily",
+      "best_loss": 0.30957008529417585,
+      "final_epoch": 40,
+      "n_samples": 35581,
+      "data_stats": {
+        "n_crypto": 5350,
+        "n_tradfi": 30231,
+        "n_total": 35581
+      }
+    }
+  }
+}
