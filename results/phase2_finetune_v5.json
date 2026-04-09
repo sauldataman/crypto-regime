@@ -4,10 +4,34 @@
   "crypto_weight": 0.7,
   "freeze_layers": 10,
   "stages": {
+    "5min": {
+      "status": "OK",
+      "stage": "5min",
+      "best_loss": 0.19014814465629812,
+      "final_epoch": 25,
+      "n_samples": 70560,
+      "data_stats": {
+        "n_crypto": 40329,
+        "n_tradfi": 30231,
+        "n_total": 70560
+      }
+    },
+    "hourly": {
+      "status": "OK",
+      "stage": "hourly",
+      "best_loss": 0.14849941310048664,
+      "final_epoch": 25,
+      "n_samples": 40937,
+      "data_stats": {
+        "n_crypto": 10706,
+        "n_tradfi": 30231,
+        "n_total": 40937
+      }
+    },
     "daily": {
       "status": "OK",
       "stage": "daily",
-      "best_loss": 0.13723156698765676,
+      "best_loss": 0.06271004397002938,
       "final_epoch": 40,
       "n_samples": 35581,
       "data_stats": {
