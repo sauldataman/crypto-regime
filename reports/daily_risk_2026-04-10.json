@@ -1,0 +1,116 @@
+{
+  "date": "2026-04-10",
+  "generated_at": "2026-04-10T19:30:18.932788+00:00",
+  "model": "v7_progressive",
+  "frequency": "hourly",
+  "assets": {
+    "btc": {
+      "var_5pct": -0.006863,
+      "var_1pct": -0.01617,
+      "median_forecast": -0.000386,
+      "uncertainty_ratio": 1.54,
+      "position_weight": 0.65,
+      "anomaly_flag": false,
+      "iqr": 0.007125
+    },
+    "eth": {
+      "var_5pct": -0.006217,
+      "var_1pct": -0.015524,
+      "median_forecast": 0.000621,
+      "uncertainty_ratio": 1.2,
+      "position_weight": 0.84,
+      "anomaly_flag": false,
+      "iqr": 0.007229
+    },
+    "sol": {
+      "var_5pct": -0.008427,
+      "var_1pct": -0.017734,
+      "median_forecast": -0.00019,
+      "uncertainty_ratio": 1.54,
+      "position_weight": 0.65,
+      "anomaly_flag": false,
+      "iqr": 0.009595
+    },
+    "bnb": {
+      "var_5pct": -0.005778,
+      "var_1pct": -0.015085,
+      "median_forecast": 0.000312,
+      "uncertainty_ratio": 1.45,
+      "position_weight": 0.69,
+      "anomaly_flag": false,
+      "iqr": 0.005795
+    },
+    "doge": {
+      "var_5pct": -0.008504,
+      "var_1pct": -0.01781,
+      "median_forecast": -0.000911,
+      "uncertainty_ratio": 1.49,
+      "position_weight": 0.67,
+      "anomaly_flag": false,
+      "iqr": 0.009114
+    },
+    "link": {
+      "var_5pct": -0.008235,
+      "var_1pct": -0.017541,
+      "median_forecast": -0.000303,
+      "uncertainty_ratio": 1.6,
+      "position_weight": 0.62,
+      "anomaly_flag": false,
+      "iqr": 0.00953
+    }
+  },
+  "portfolio_summary": {
+    "highest_risk": "DOGE",
+    "lowest_risk": "BNB",
+    "avg_uncertainty": 1.47,
+    "any_anomaly": false,
+    "any_event": true
+  },
+  "regime_status": {
+    "regime_id": 5,
+    "n_breakpoints": 5,
+    "last_transition": "2026-02-05"
+  },
+  "event_status": {
+    "btc": {
+      "any_event": false,
+      "n_events": 0,
+      "lookback_hours": 168,
+      "latest_event": null
+    },
+    "eth": {
+      "any_event": true,
+      "n_events": 1,
+      "lookback_hours": 168,
+      "latest_event": {
+        "time": "2026-04-06 22:00:00",
+        "type": "zscore",
+        "zscore": -3.05
+      }
+    },
+    "sol": {
+      "any_event": false,
+      "n_events": 0,
+      "lookback_hours": 168,
+      "latest_event": null
+    },
+    "bnb": {
+      "any_event": false,
+      "n_events": 0,
+      "lookback_hours": 168,
+      "latest_event": null
+    },
+    "doge": {
+      "any_event": false,
+      "n_events": 0,
+      "lookback_hours": 168,
+      "latest_event": null
+    },
+    "link": {
+      "any_event": false,
+      "n_events": 0,
+      "lookback_hours": 168,
+      "latest_event": null
+    }
+  }
+}
