@@ -169,6 +169,11 @@ def evt_calibrate_var1(results: list[dict]) -> dict:
     EVT models the left tail of residuals and extrapolates to P01.
     """
     try:
+        import sys
+        from pathlib import Path
+        _root = str(Path(__file__).parent.parent)
+        if _root not in sys.path:
+            sys.path.insert(0, _root)
         from pipeline.evt import evt_calibrate
         logger.info("  Attempting EVT calibration with %d samples...", len(results))
         cal_params = evt_calibrate(results, target_alpha=0.01)
