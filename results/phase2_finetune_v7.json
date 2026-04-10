@@ -1,0 +1,53 @@
+{
+  "phase": "2_v7",
+  "recipe": "v4_base + tail_weighted_pinball + more_epochs",
+  "changes_from_v4": [
+    "Tail-weighted pinball: P10/P90 3x, P20/P80 2x",
+    "More epochs: 25/25/40 (was 15/15/30)"
+  ],
+  "kept_from_v4": [
+    "5min \u2192 hourly \u2192 daily progressive (5min is critical!)",
+    "Freeze 15/20",
+    "Last-patch-only loss",
+    "50% crypto / 50% tradfi",
+    "No augmentation"
+  ],
+  "stages": {
+    "5min": {
+      "status": "OK",
+      "stage": "5min",
+      "best_loss": 0.3553251708484172,
+      "final_epoch": 25,
+      "n_samples": 70560,
+      "data_stats": {
+        "n_crypto": 40329,
+        "n_tradfi": 30231,
+        "n_total": 70560
+      }
+    },
+    "hourly": {
+      "status": "OK",
+      "stage": "hourly",
+      "best_loss": 0.33003367243425014,
+      "final_epoch": 25,
+      "n_samples": 40937,
+      "data_stats": {
+        "n_crypto": 10706,
+        "n_tradfi": 30231,
+        "n_total": 40937
+      }
+    },
+    "daily": {
+      "status": "OK",
+      "stage": "daily",
+      "best_loss": 0.29294901064234097,
+      "final_epoch": 40,
+      "n_samples": 35581,
+      "data_stats": {
+        "n_crypto": 5350,
+        "n_tradfi": 30231,
+        "n_total": 35581
+      }
+    }
+  }
+}
