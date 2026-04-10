@@ -162,6 +162,29 @@ def walk_forward_forecast(model, returns: pd.Series, start: str, end: str) -> li
     return results
 
 
+def evt_calibrate_var1(results: list[dict]) -> dict:
+    """Use EVT (Generalized Pareto Distribution) for VaR 1% calibration.
+
+    Conformal fails for VaR 1% because P10 is too far from P01.
+    EVT models the left tail of residuals and extrapolates to P01.
+    """
+    try:
+        from pipeline.evt import evt_calibrate
+        cal_params = evt_calibrate(results, target_alpha=0.01)
+        if cal_params.get("method") == "evt":
+            logger.info("  EVT VaR 1%%: correction=%.4f", cal_params["correction"])
+            return cal_params
+        else:
+            logger.warning("  EVT failed: %s. Falling back to conformal.", cal_params.get("reason", "unknown"))
+    except ImportError:
+        logger.warning("  pipeline.evt not available. Falling back to conformal.")
+    except Exception as e:
+        logger.warning("  EVT error: %s. Falling back to conformal.", e)
+
+    # Fallback to conformal
+    return conformal_calibrate(results, 0.01)
+
+
 def conformal_calibrate(results: list[dict], alpha: float) -> dict:
     """Conformal calibration. Uses P10 as base quantile for all VaR levels."""
     q_key = "q10"  # nearest available quantile to 5% and 1%
@@ -425,7 +448,7 @@ def main():
 
     # Conformal calibration
     cal_5 = conformal_calibrate(cal_results, 0.05)
-    cal_1 = conformal_calibrate(cal_results, 0.01)
+    cal_1 = evt_calibrate_var1(cal_results)
     logger.info("VaR 5%% calibration: %s (correction=%.6f)", cal_5["method"], cal_5.get("correction", 0))
     logger.info("VaR 1%% calibration: %s (correction=%.6f)", cal_1["method"], cal_1.get("correction", 0))
 
