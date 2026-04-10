@@ -170,16 +170,21 @@ def evt_calibrate_var1(results: list[dict]) -> dict:
     """
     try:
         from pipeline.evt import evt_calibrate
+        logger.info("  Attempting EVT calibration with %d samples...", len(results))
         cal_params = evt_calibrate(results, target_alpha=0.01)
+        logger.info("  EVT returned: method=%s", cal_params.get("method"))
         if cal_params.get("method") == "evt":
             logger.info("  EVT VaR 1%%: correction=%.4f", cal_params["correction"])
             return cal_params
         else:
-            logger.warning("  EVT failed: %s. Falling back to conformal.", cal_params.get("reason", "unknown"))
+            logger.warning("  EVT did not return 'evt' method: %s. Falling back to conformal.",
+                           json.dumps({k: v for k, v in cal_params.items() if k != "diagnostic"}, default=str))
     except ImportError:
         logger.warning("  pipeline.evt not available. Falling back to conformal.")
     except Exception as e:
         logger.warning("  EVT error: %s. Falling back to conformal.", e)
+        import traceback
+        traceback.print_exc()
 
     # Fallback to conformal
     return conformal_calibrate(results, 0.01)
