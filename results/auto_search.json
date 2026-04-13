@@ -1,0 +1,922 @@
+{
+  "trials": [
+    {
+      "status": "OK",
+      "trial": 0,
+      "config": {
+        "freeze_layers": 17,
+        "lr": 5e-06,
+        "crypto_weight": 0.3,
+        "epochs": 25,
+        "tail_weight_p10": 2.0,
+        "batch_size": 32
+      },
+      "best_loss": 0.38921510631387884,
+      "p10_coverage": 0.12666666666666668,
+      "score": 0.026666666666666672,
+      "train_time_sec": 1540,
+      "n_trainable": 62275280,
+      "n_eval": 300
+    },
+    {
+      "status": "OK",
+      "trial": 1,
+      "config": {
+        "freeze_layers": 13,
+        "lr": 0.0001,
+        "crypto_weight": 0.3,
+        "epochs": 15,
+        "tail_weight_p10": 5.0,
+        "batch_size": 16
+      },
+      "best_loss": 0.205434158270122,
+      "p10_coverage": 0.22,
+      "score": 0.12,
+      "train_time_sec": 2467,
+      "n_trainable": 101618320,
+      "n_eval": 300
+    },
+    {
+      "status": "OK",
+      "trial": 2,
+      "config": {
+        "freeze_layers": 12,
+        "lr": 5e-06,
+        "crypto_weight": 0.4,
+        "epochs": 20,
+        "tail_weight_p10": 1.0,
+        "batch_size": 32
+      },
+      "best_loss": 0.4007216529680951,
+      "p10_coverage": 0.13,
+      "score": 0.03,
+      "train_time_sec": 2132,
+      "n_trainable": 111454080,
+      "n_eval": 300
+    },
+    {
+      "status": "OK",
+      "trial": 3,
+      "config": {
+        "freeze_layers": 17,
+        "lr": 0.0001,
+        "crypto_weight": 0.7,
+        "epochs": 30,
+        "tail_weight_p10": 2.0,
+        "batch_size": 64
+      },
+      "best_loss": 0.309210096205677,
+      "p10_coverage": 0.14,
+      "score": 0.04000000000000001,
+      "train_time_sec": 1333,
+      "n_trainable": 62275280,
+      "n_eval": 300
+    },
+    {
+      "status": "OK",
+      "trial": 4,
+      "config": {
+        "freeze_layers": 16,
+        "lr": 2e-05,
+        "crypto_weight": 0.3,
+        "epochs": 20,
+        "tail_weight_p10": 5.0,
+        "batch_size": 48
+      },
+      "best_loss": 0.35771289021380037,
+      "p10_coverage": 0.12,
+      "score": 0.01999999999999999,
+      "train_time_sec": 1118,
+      "n_trainable": 72111040,
+      "n_eval": 300
+    },
+    {
+      "status": "OK",
+      "trial": 5,
+      "config": {
+        "freeze_layers": 14,
+        "lr": 1e-05,
+        "crypto_weight": 0.4,
+        "epochs": 25,
+        "tail_weight_p10": 1.0,
+        "batch_size": 16
+      },
+      "best_loss": 0.3787004465771,
+      "p10_coverage": 0.13,
+      "score": 0.03,
+      "train_time_sec": 3840,
+      "n_trainable": 91782560,
+      "n_eval": 300
+    },
+    {
+      "status": "OK",
+      "trial": 6,
+      "config": {
+        "freeze_layers": 15,
+        "lr": 5e-06,
+        "crypto_weight": 0.5,
+        "epochs": 25,
+        "tail_weight_p10": 3.0,
+        "batch_size": 16
+      },
+      "best_loss": 0.37220786119091903,
+      "p10_coverage": 0.12666666666666668,
+      "score": 0.026666666666666672,
+      "train_time_sec": 3597,
+      "n_trainable": 81946800,
+      "n_eval": 300
+    },
+    {
+      "status": "OK",
+      "trial": 7,
+      "config": {
+        "freeze_layers": 17,
+        "lr": 3e-05,
+        "crypto_weight": 0.7,
+        "epochs": 15,
+        "tail_weight_p10": 5.0,
+        "batch_size": 16
+      },
+      "best_loss": 0.34817361295410926,
+      "p10_coverage": 0.11666666666666667,
+      "score": 0.016666666666666663,
+      "train_time_sec": 1557,
+      "n_trainable": 62275280,
+      "n_eval": 300
+    },
+    {
+      "status": "OK",
+      "trial": 8,
+      "config": {
+        "freeze_layers": 16,
+        "lr": 2e-05,
+        "crypto_weight": 0.7,
+        "epochs": 25,
+        "tail_weight_p10": 2.0,
+        "batch_size": 16
+      },
+      "best_loss": 0.34837109898855917,
+      "p10_coverage": 0.12666666666666668,
+      "score": 0.026666666666666672,
+      "train_time_sec": 3050,
+      "n_trainable": 72111040,
+      "n_eval": 300
+    },
+    {
+      "status": "OK",
+      "trial": 9,
+      "config": {
+        "freeze_layers": 12,
+        "lr": 0.0001,
+        "crypto_weight": 0.4,
+        "epochs": 25,
+        "tail_weight_p10": 1.0,
+        "batch_size": 32
+      },
+      "best_loss": 0.1858524214929015,
+      "p10_coverage": 0.23333333333333334,
+      "score": 0.13333333333333333,
+      "train_time_sec": 2594,
+      "n_trainable": 111454080,
+      "n_eval": 300
+    },
+    {
+      "status": "OK",
+      "trial": 10,
+      "config": {
+        "freeze_layers": 12,
+        "lr": 3e-05,
+        "crypto_weight": 0.5,
+        "epochs": 30,
+        "tail_weight_p10": 3.0,
+        "batch_size": 32
+      },
+      "best_loss": 0.26956130668829414,
+      "p10_coverage": 0.15666666666666668,
+      "score": 0.05666666666666667,
+      "train_time_sec": 3156,
+      "n_trainable": 111454080,
+      "n_eval": 300
+    },
+    {
+      "status": "OK",
+      "trial": 11,
+      "config": {
+        "freeze_layers": 14,
+        "lr": 2e-05,
+        "crypto_weight": 0.4,
+        "epochs": 25,
+        "tail_weight_p10": 1.0,
+        "batch_size": 32
+      },
+      "best_loss": 0.3631147601709615,
+      "p10_coverage": 0.13333333333333333,
+      "score": 0.033333333333333326,
+      "train_time_sec": 2138,
+      "n_trainable": 91782560,
+      "n_eval": 300
+    },
+    {
+      "status": "OK",
+      "trial": 12,
+      "config": {
+        "freeze_layers": 16,
+        "lr": 0.0001,
+        "crypto_weight": 0.4,
+        "epochs": 20,
+        "tail_weight_p10": 5.0,
+        "batch_size": 64
+      },
+      "best_loss": 0.2937210202217102,
+      "p10_coverage": 0.11,
+      "score": 0.009999999999999995,
+      "train_time_sec": 989,
+      "n_trainable": 72111040,
+      "n_eval": 300
+    },
+    {
+      "status": "OK",
+      "trial": 13,
+      "config": {
+        "freeze_layers": 14,
+        "lr": 0.0001,
+        "crypto_weight": 0.7,
+        "epochs": 20,
+        "tail_weight_p10": 3.0,
+        "batch_size": 16
+      },
+      "best_loss": 0.19763826365359347,
+      "p10_coverage": 0.17,
+      "score": 0.07,
+      "train_time_sec": 3228,
+      "n_trainable": 91782560,
+      "n_eval": 300
+    },
+    {
+      "status": "OK",
+      "trial": 14,
+      "config": {
+        "freeze_layers": 13,
+        "lr": 5e-06,
+        "crypto_weight": 0.5,
+        "epochs": 30,
+        "tail_weight_p10": 3.0,
+        "batch_size": 16
+      },
+      "best_loss": 0.3654180478725249,
+      "p10_coverage": 0.12666666666666668,
+      "score": 0.026666666666666672,
+      "train_time_sec": 5041,
+      "n_trainable": 101618320,
+      "n_eval": 300
+    },
+    {
+      "status": "OK",
+      "trial": 15,
+      "config": {
+        "freeze_layers": 13,
+        "lr": 5e-05,
+        "crypto_weight": 0.5,
+        "epochs": 20,
+        "tail_weight_p10": 5.0,
+        "batch_size": 64
+      },
+      "best_loss": 0.30068934726285507,
+      "p10_coverage": 0.14333333333333334,
+      "score": 0.043333333333333335,
+      "train_time_sec": 1296,
+      "n_trainable": 101618320,
+      "n_eval": 300
+    },
+    {
+      "status": "OK",
+      "trial": 16,
+      "config": {
+        "freeze_layers": 17,
+        "lr": 3e-05,
+        "crypto_weight": 0.4,
+        "epochs": 25,
+        "tail_weight_p10": 2.0,
+        "batch_size": 32
+      },
+      "best_loss": 0.3629545277298087,
+      "p10_coverage": 0.11666666666666667,
+      "score": 0.016666666666666663,
+      "train_time_sec": 1471,
+      "n_trainable": 62275280,
+      "n_eval": 300
+    },
+    {
+      "status": "OK",
+      "trial": 17,
+      "config": {
+        "freeze_layers": 17,
+        "lr": 5e-05,
+        "crypto_weight": 0.7,
+        "epochs": 25,
+        "tail_weight_p10": 5.0,
+        "batch_size": 64
+      },
+      "best_loss": 0.33913946967941144,
+      "p10_coverage": 0.11666666666666667,
+      "score": 0.016666666666666663,
+      "train_time_sec": 1105,
+      "n_trainable": 62275280,
+      "n_eval": 300
+    },
+    {
+      "status": "OK",
+      "trial": 18,
+      "config": {
+        "freeze_layers": 14,
+        "lr": 1e-05,
+        "crypto_weight": 0.4,
+        "epochs": 30,
+        "tail_weight_p10": 1.0,
+        "batch_size": 16
+      },
+      "best_loss": 0.3678305809877501,
+      "p10_coverage": 0.13333333333333333,
+      "score": 0.033333333333333326,
+      "train_time_sec": 4670,
+      "n_trainable": 91782560,
+      "n_eval": 300
+    },
+    {
+      "status": "OK",
+      "trial": 19,
+      "config": {
+        "freeze_layers": 12,
+        "lr": 1e-05,
+        "crypto_weight": 0.4,
+        "epochs": 30,
+        "tail_weight_p10": 1.0,
+        "batch_size": 64
+      },
+      "best_loss": 0.3927397744075672,
+      "p10_coverage": 0.12666666666666668,
+      "score": 0.026666666666666672,
+      "train_time_sec": 2091,
+      "n_trainable": 111454080,
+      "n_eval": 300
+    },
+    {
+      "status": "OK",
+      "trial": 20,
+      "config": {
+        "freeze_layers": 15,
+        "lr": 5e-05,
+        "crypto_weight": 0.6,
+        "epochs": 25,
+        "tail_weight_p10": 1.0,
+        "batch_size": 16
+      },
+      "best_loss": 0.2643808554916622,
+      "p10_coverage": 0.14333333333333334,
+      "score": 0.043333333333333335,
+      "train_time_sec": 3413,
+      "n_trainable": 81946800,
+      "n_eval": 300
+    },
+    {
+      "status": "OK",
+      "trial": 21,
+      "config": {
+        "freeze_layers": 17,
+        "lr": 5e-05,
+        "crypto_weight": 0.5,
+        "epochs": 25,
+        "tail_weight_p10": 1.0,
+        "batch_size": 48
+      },
+      "best_loss": 0.36788081229939634,
+      "p10_coverage": 0.12,
+      "score": 0.01999999999999999,
+      "train_time_sec": 1228,
+      "n_trainable": 62275280,
+      "n_eval": 300
+    },
+    {
+      "status": "OK",
+      "trial": 22,
+      "config": {
+        "freeze_layers": 15,
+        "lr": 1e-05,
+        "crypto_weight": 0.6,
+        "epochs": 15,
+        "tail_weight_p10": 3.0,
+        "batch_size": 32
+      },
+      "best_loss": 0.37539022514457426,
+      "p10_coverage": 0.12666666666666668,
+      "score": 0.026666666666666672,
+      "train_time_sec": 1198,
+      "n_trainable": 81946800,
+      "n_eval": 300
+    },
+    {
+      "status": "OK",
+      "trial": 23,
+      "config": {
+        "freeze_layers": 16,
+        "lr": 5e-06,
+        "crypto_weight": 0.5,
+        "epochs": 20,
+        "tail_weight_p10": 2.0,
+        "batch_size": 48
+      },
+      "best_loss": 0.3896258882826317,
+      "p10_coverage": 0.12666666666666668,
+      "score": 0.026666666666666672,
+      "train_time_sec": 1104,
+      "n_trainable": 72111040,
+      "n_eval": 300
+    },
+    {
+      "status": "OK",
+      "trial": 24,
+      "config": {
+        "freeze_layers": 13,
+        "lr": 5e-05,
+        "crypto_weight": 0.7,
+        "epochs": 15,
+        "tail_weight_p10": 3.0,
+        "batch_size": 64
+      },
+      "best_loss": 0.33534467397509393,
+      "p10_coverage": 0.14,
+      "score": 0.04000000000000001,
+      "train_time_sec": 968,
+      "n_trainable": 101618320,
+      "n_eval": 300
+    },
+    {
+      "status": "OK",
+      "trial": 25,
+      "config": {
+        "freeze_layers": 12,
+        "lr": 5e-06,
+        "crypto_weight": 0.5,
+        "epochs": 25,
+        "tail_weight_p10": 2.0,
+        "batch_size": 16
+      },
+      "best_loss": 0.376550278401407,
+      "p10_coverage": 0.13,
+      "score": 0.03,
+      "train_time_sec": 4512,
+      "n_trainable": 111454080,
+      "n_eval": 300
+    },
+    {
+      "status": "OK",
+      "trial": 26,
+      "config": {
+        "freeze_layers": 13,
+        "lr": 5e-05,
+        "crypto_weight": 0.3,
+        "epochs": 15,
+        "tail_weight_p10": 5.0,
+        "batch_size": 16
+      },
+      "best_loss": 0.2626582889327904,
+      "p10_coverage": 0.18333333333333332,
+      "score": 0.08333333333333331,
+      "train_time_sec": 2634,
+      "n_trainable": 101618320,
+      "n_eval": 300
+    },
+    {
+      "status": "OK",
+      "trial": 27,
+      "config": {
+        "freeze_layers": 16,
+        "lr": 1e-05,
+        "crypto_weight": 0.4,
+        "epochs": 30,
+        "tail_weight_p10": 2.0,
+        "batch_size": 48
+      },
+      "best_loss": 0.3839260865400034,
+      "p10_coverage": 0.12333333333333334,
+      "score": 0.02333333333333333,
+      "train_time_sec": 1684,
+      "n_trainable": 72111040,
+      "n_eval": 300
+    },
+    {
+      "status": "OK",
+      "trial": 28,
+      "config": {
+        "freeze_layers": 16,
+        "lr": 5e-05,
+        "crypto_weight": 0.6,
+        "epochs": 20,
+        "tail_weight_p10": 2.0,
+        "batch_size": 48
+      },
+      "best_loss": 0.3458949048348606,
+      "p10_coverage": 0.12,
+      "score": 0.01999999999999999,
+      "train_time_sec": 1093,
+      "n_trainable": 72111040,
+      "n_eval": 300
+    },
+    {
+      "status": "OK",
+      "trial": 29,
+      "config": {
+        "freeze_layers": 15,
+        "lr": 0.0001,
+        "crypto_weight": 0.5,
+        "epochs": 30,
+        "tail_weight_p10": 5.0,
+        "batch_size": 16
+      },
+      "best_loss": 0.17020929655712894,
+      "p10_coverage": 0.15,
+      "score": 0.04999999999999999,
+      "train_time_sec": 4249,
+      "n_trainable": 81946800,
+      "n_eval": 300
+    },
+    {
+      "status": "OK",
+      "trial": 30,
+      "config": {
+        "freeze_layers": 13,
+        "lr": 1e-05,
+        "crypto_weight": 0.3,
+        "epochs": 25,
+        "tail_weight_p10": 1.0,
+        "batch_size": 32
+      },
+      "best_loss": 0.38844262437708843,
+      "p10_coverage": 0.13333333333333333,
+      "score": 0.033333333333333326,
+      "train_time_sec": 2457,
+      "n_trainable": 101618320,
+      "n_eval": 300
+    },
+    {
+      "status": "OK",
+      "trial": 31,
+      "config": {
+        "freeze_layers": 16,
+        "lr": 1e-05,
+        "crypto_weight": 0.3,
+        "epochs": 15,
+        "tail_weight_p10": 1.0,
+        "batch_size": 32
+      },
+      "best_loss": 0.40143473809844843,
+      "p10_coverage": 0.12666666666666668,
+      "score": 0.026666666666666672,
+      "train_time_sec": 1061,
+      "n_trainable": 72111040,
+      "n_eval": 300
+    },
+    {
+      "status": "OK",
+      "trial": 32,
+      "config": {
+        "freeze_layers": 12,
+        "lr": 5e-06,
+        "crypto_weight": 0.5,
+        "epochs": 15,
+        "tail_weight_p10": 2.0,
+        "batch_size": 48
+      },
+      "best_loss": 0.39075562365946337,
+      "p10_coverage": 0.12666666666666668,
+      "score": 0.026666666666666672,
+      "train_time_sec": 1225,
+      "n_trainable": 111454080,
+      "n_eval": 300
+    },
+    {
+      "status": "OK",
+      "trial": 33,
+      "config": {
+        "freeze_layers": 17,
+        "lr": 3e-05,
+        "crypto_weight": 0.4,
+        "epochs": 20,
+        "tail_weight_p10": 5.0,
+        "batch_size": 32
+      },
+      "best_loss": 0.3497961408162739,
+      "p10_coverage": 0.11666666666666667,
+      "score": 0.016666666666666663,
+      "train_time_sec": 1215,
+      "n_trainable": 62275280,
+      "n_eval": 300
+    },
+    {
+      "status": "OK",
+      "trial": 34,
+      "config": {
+        "freeze_layers": 15,
+        "lr": 3e-05,
+        "crypto_weight": 0.4,
+        "epochs": 15,
+        "tail_weight_p10": 1.0,
+        "batch_size": 64
+      },
+      "best_loss": 0.3919838609459164,
+      "p10_coverage": 0.12666666666666668,
+      "score": 0.026666666666666672,
+      "train_time_sec": 812,
+      "n_trainable": 81946800,
+      "n_eval": 300
+    },
+    {
+      "status": "OK",
+      "trial": 35,
+      "config": {
+        "freeze_layers": 14,
+        "lr": 3e-05,
+        "crypto_weight": 0.6,
+        "epochs": 30,
+        "tail_weight_p10": 1.0,
+        "batch_size": 16
+      },
+      "best_loss": 0.2720069531728382,
+      "p10_coverage": 0.17,
+      "score": 0.07,
+      "train_time_sec": 4791,
+      "n_trainable": 91782560,
+      "n_eval": 300
+    },
+    {
+      "status": "OK",
+      "trial": 36,
+      "config": {
+        "freeze_layers": 12,
+        "lr": 3e-05,
+        "crypto_weight": 0.5,
+        "epochs": 15,
+        "tail_weight_p10": 2.0,
+        "batch_size": 32
+      },
+      "best_loss": 0.34316805276003753,
+      "p10_coverage": 0.14333333333333334,
+      "score": 0.043333333333333335,
+      "train_time_sec": 1631,
+      "n_trainable": 111454080,
+      "n_eval": 300
+    },
+    {
+      "status": "OK",
+      "trial": 37,
+      "config": {
+        "freeze_layers": 13,
+        "lr": 5e-05,
+        "crypto_weight": 0.6,
+        "epochs": 20,
+        "tail_weight_p10": 5.0,
+        "batch_size": 32
+      },
+      "best_loss": 0.2651919981952619,
+      "p10_coverage": 0.17333333333333334,
+      "score": 0.07333333333333333,
+      "train_time_sec": 1962,
+      "n_trainable": 101618320,
+      "n_eval": 300
+    },
+    {
+      "status": "OK",
+      "trial": 38,
+      "config": {
+        "freeze_layers": 14,
+        "lr": 3e-05,
+        "crypto_weight": 0.4,
+        "epochs": 15,
+        "tail_weight_p10": 5.0,
+        "batch_size": 16
+      },
+      "best_loss": 0.3117946014780211,
+      "p10_coverage": 0.14,
+      "score": 0.04000000000000001,
+      "train_time_sec": 2277,
+      "n_trainable": 91782560,
+      "n_eval": 300
+    },
+    {
+      "status": "OK",
+      "trial": 39,
+      "config": {
+        "freeze_layers": 12,
+        "lr": 0.0001,
+        "crypto_weight": 0.7,
+        "epochs": 15,
+        "tail_weight_p10": 1.0,
+        "batch_size": 32
+      },
+      "best_loss": 0.25205221697084546,
+      "p10_coverage": 0.26,
+      "score": 0.16,
+      "train_time_sec": 1618,
+      "n_trainable": 111454080,
+      "n_eval": 300
+    },
+    {
+      "status": "OK",
+      "trial": 40,
+      "config": {
+        "freeze_layers": 13,
+        "lr": 3e-05,
+        "crypto_weight": 0.6,
+        "epochs": 30,
+        "tail_weight_p10": 2.0,
+        "batch_size": 64
+      },
+      "best_loss": 0.3262312675381566,
+      "p10_coverage": 0.13666666666666666,
+      "score": 0.03666666666666665,
+      "train_time_sec": 1951,
+      "n_trainable": 101618320,
+      "n_eval": 300
+    },
+    {
+      "status": "OK",
+      "trial": 41,
+      "config": {
+        "freeze_layers": 12,
+        "lr": 1e-05,
+        "crypto_weight": 0.6,
+        "epochs": 15,
+        "tail_weight_p10": 5.0,
+        "batch_size": 48
+      },
+      "best_loss": 0.36577832847632535,
+      "p10_coverage": 0.12666666666666668,
+      "score": 0.026666666666666672,
+      "train_time_sec": 1196,
+      "n_trainable": 111454080,
+      "n_eval": 300
+    },
+    {
+      "status": "OK",
+      "trial": 42,
+      "config": {
+        "freeze_layers": 15,
+        "lr": 2e-05,
+        "crypto_weight": 0.6,
+        "epochs": 30,
+        "tail_weight_p10": 2.0,
+        "batch_size": 32
+      },
+      "best_loss": 0.34537781817917346,
+      "p10_coverage": 0.13,
+      "score": 0.03,
+      "train_time_sec": 2367,
+      "n_trainable": 81946800,
+      "n_eval": 300
+    },
+    {
+      "status": "OK",
+      "trial": 43,
+      "config": {
+        "freeze_layers": 14,
+        "lr": 1e-05,
+        "crypto_weight": 0.3,
+        "epochs": 15,
+        "tail_weight_p10": 3.0,
+        "batch_size": 16
+      },
+      "best_loss": 0.36845542523327895,
+      "p10_coverage": 0.13,
+      "score": 0.03,
+      "train_time_sec": 2241,
+      "n_trainable": 91782560,
+      "n_eval": 300
+    },
+    {
+      "status": "OK",
+      "trial": 44,
+      "config": {
+        "freeze_layers": 12,
+        "lr": 5e-05,
+        "crypto_weight": 0.6,
+        "epochs": 20,
+        "tail_weight_p10": 1.0,
+        "batch_size": 16
+      },
+      "best_loss": 0.2433246966422918,
+      "p10_coverage": 0.20666666666666667,
+      "score": 0.10666666666666666,
+      "train_time_sec": 3784,
+      "n_trainable": 111454080,
+      "n_eval": 300
+    },
+    {
+      "status": "OK",
+      "trial": 45,
+      "config": {
+        "freeze_layers": 13,
+        "lr": 5e-06,
+        "crypto_weight": 0.7,
+        "epochs": 15,
+        "tail_weight_p10": 2.0,
+        "batch_size": 64
+      },
+      "best_loss": 0.3905014348996652,
+      "p10_coverage": 0.12666666666666668,
+      "score": 0.026666666666666672,
+      "train_time_sec": 965,
+      "n_trainable": 101618320,
+      "n_eval": 300
+    },
+    {
+      "status": "OK",
+      "trial": 46,
+      "config": {
+        "freeze_layers": 12,
+        "lr": 5e-05,
+        "crypto_weight": 0.4,
+        "epochs": 15,
+        "tail_weight_p10": 1.0,
+        "batch_size": 64
+      },
+      "best_loss": 0.3573249245012129,
+      "p10_coverage": 0.14666666666666667,
+      "score": 0.04666666666666666,
+      "train_time_sec": 1054,
+      "n_trainable": 111454080,
+      "n_eval": 300
+    },
+    {
+      "status": "OK",
+      "trial": 47,
+      "config": {
+        "freeze_layers": 17,
+        "lr": 5e-05,
+        "crypto_weight": 0.7,
+        "epochs": 25,
+        "tail_weight_p10": 3.0,
+        "batch_size": 32
+      },
+      "best_loss": 0.3316638426776409,
+      "p10_coverage": 0.11333333333333333,
+      "score": 0.013333333333333322,
+      "train_time_sec": 1501,
+      "n_trainable": 62275280,
+      "n_eval": 300
+    },
+    {
+      "status": "OK",
+      "trial": 48,
+      "config": {
+        "freeze_layers": 17,
+        "lr": 0.0001,
+        "crypto_weight": 0.5,
+        "epochs": 20,
+        "tail_weight_p10": 3.0,
+        "batch_size": 64
+      },
+      "best_loss": 0.3310430188436766,
+      "p10_coverage": 0.11666666666666667,
+      "score": 0.016666666666666663,
+      "train_time_sec": 888,
+      "n_trainable": 62275280,
+      "n_eval": 300
+    },
+    {
+      "status": "OK",
+      "trial": 49,
+      "config": {
+        "freeze_layers": 13,
+        "lr": 0.0001,
+        "crypto_weight": 0.5,
+        "epochs": 30,
+        "tail_weight_p10": 3.0,
+        "batch_size": 16
+      },
+      "best_loss": 0.13931462987821702,
+      "p10_coverage": 0.18333333333333332,
+      "score": 0.08333333333333331,
+      "train_time_sec": 5351,
+      "n_trainable": 101618320,
+      "n_eval": 300
+    }
+  ],
+  "best": {
+    "status": "OK",
+    "trial": 12,
+    "config": {
+      "freeze_layers": 16,
+      "lr": 0.0001,
+      "crypto_weight": 0.4,
+      "epochs": 20,
+      "tail_weight_p10": 5.0,
+      "batch_size": 64
+    },
+    "best_loss": 0.2937210202217102,
+    "p10_coverage": 0.11,
+    "score": 0.009999999999999995,
+    "train_time_sec": 989,
+    "n_trainable": 72111040,
+    "n_eval": 300
+  }
+}
